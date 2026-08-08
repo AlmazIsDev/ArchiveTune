@@ -642,4 +642,20 @@
     <string name="release_type_album">Album</string>
     <string name="release_type_single">Single</string>
     <string name="release_metadata">%1$s • %2$d</string>
+    <string name="aod_customize_show_lyric_ticker">Afficher le défilement des paroles</string>
+    <string name="aod_background_adaptive_art">Pochette d\'album adaptative</string>
+    <string name="aod_background_frosted_wallpaper">Papier peint givré</string>
+    <string name="aod_background_adaptive_frosted">Givré adaptatif</string>
+    <string name="aod_customize_minimal_locked_view_desc">En mode verrouillé, n\'afficher que l\'heure et le titre de la chanson — masque la pochette et les commandes</string>
+    <string name="aod_customize_touch_lock">Fonction « Touch Lock » activée</string>
+    <string name="aod_customize_proximity_blackout">Occultation « Pocket » et « Face-Down »</string>
+    <string name="aod_customize_proximity_blackout_desc">Éteindre l\'écran lorsque le capteur de proximité détecte que l\'appareil est dans une poche ou posé écran vers le bas</string>
+    <string name="aod_customize_true_ambient_mode">Véritable ambiance permanente</string>
+    <string name="aod_customize_true_ambient_mode_desc">Afficher un fond d\'écran minimaliste et l\'horloge lorsque le téléphone n\'est pas utilisé</string>
+    <string name="aod_customize_auto_start_screen_off">Afficher l\'AOD lorsque l\'écran s\'éteint</string>
+    <string name="aod_customize_auto_start_screen_off_desc">Afficher automatiquement l\'écran d\'ambiance AOD lorsque l\'écran s\'éteint pendant la lecture</string>
+    <string name="aod_customize_screensaver_info_title">Écran de veille système (AOD en charge)</string>
+    <string name="aod_customize_screensaver_info_desc">Pour activer automatiquement AOD pendant la recharge ou lorsque l\'appareil est connecté à sa station d\'accueil, accédez aux Paramètres Android &gt; Affichage &gt; Écran de veille, puis sélectionnez ArchiveTune.</string>
+    <string name="aod_mode">Mode AOD</string>
+    <string name="aod_mode_exit">Quitter AOD</string>
 </resources>
