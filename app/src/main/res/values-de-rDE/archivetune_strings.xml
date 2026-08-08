@@ -591,4 +591,13 @@
     <string name="mori_cipher_status_degraded">Konfiguration aus dem Cache verwenden</string>
     <string name="stats_empty_message">Songs, die du wiedergibst, werden hier mit Hörtrends und Rankings auftauchen.</string>
     <string name="stats_listening_patterns">Hörmuster</string>
+    <string name="aod_battery_percent">%d%%</string>
+    <string name="aod_customize_clock_style">Uhrstil</string>
+    <string name="aod_customize_auto_start_screen_off">AOD anzeigen, wenn der Bildschirm ausgeht</string>
+    <string name="aod_customize_show_clock">Digitale Uhr anzeigen</string>
+    <string name="aod_customize_auto_lock_delay_value">%ds</string>
+    <string name="aod_customize_shake_to_unlock">Zum Entsperren schütteln</string>
+    <string name="aod_clock_minimal">Minimal</string>
+    <string name="aod_mode_exit">AOD beenden</string>
+    <string name="aod_mode">AOD-Modus</string>
 </resources>
