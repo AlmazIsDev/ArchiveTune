@@ -544,4 +544,14 @@
     <string name="spotify_loading_library">正在加載 Spotify 媒體庫</string>
     <string name="spotify_no_sources">未找到 Spotify 播放清單</string>
     <string name="spotify_account">Spotify 帳戶</string>
+    <string name="spotify_no_tracks">未找到 Spotify 曲目。</string>
+    <string name="login_success">登入成功</string>
+    <string name="ai_integration">AI 整合</string>
+    <string name="ai_integration_desc">配置 AI 翻譯與個人化使用者自動化功能。</string>
+    <string name="ai_provider_settings">提供者</string>
+    <string name="ai_provider">AI 提供者</string>
+    <string name="ai_provider_desc">選擇 AI 服務。</string>
+    <string name="ai_provider_none">無（停用）</string>
+    <string name="ai_custom_endpoint">自訂端點</string>
+    <string name="ai_api_key">API 金鑰</string>
 </resources>
