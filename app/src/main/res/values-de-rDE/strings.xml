@@ -1057,7 +1057,8 @@
     <string name="custom_background_adjustments_description">Bild in beiden Vorschauen anpassen.</string>
     <string name="eq_bass_boost_description">Wirkung tiefer Frequenzen verstärken</string>
     <string name="widget_top_song_summary">Aktuell Top: %1$s</string>
-    <string name="custom_background_subtitle">Vorschau und Anpassung des Players und des Hintergrunds für die Liedtexte</string>
+    <string name="custom_background_subtitle">Vorschau und Anpassung des Players und des Hintergrunds für die Songtexte</string>
     <string name="custom_background_preview_player">Player</string>
     <string name="custom_background_permission_error">ArchiveTune konnte den Zugriff auf dieses Bild nicht aufrechterhalten.</string>
+    <string name="eq_signal">Signal</string>
 </resources>
