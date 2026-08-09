@@ -41,8 +41,10 @@ class CoilBitmapLoader(
                     throw IllegalArgumentException("Empty image data")
                 }
 
-                val bitmap = BitmapFactory.decodeByteArray(data, 0, data.size)
-                val mediaSessionBitmap = bitmap?.toOwnedMediaSessionBitmap()
+                val mediaSessionBitmap =
+                    decodeSampledBitmap(data)
+                        ?.toOwnedMediaSessionBitmap()
+                        ?.scaleToNotificationArtwork()
                 if (mediaSessionBitmap != null) {
                     return@future mediaSessionBitmap
                 }
@@ -72,27 +74,11 @@ class CoilBitmapLoader(
                     when (result) {
                         is SuccessResult -> {
                             try {
-                                val bitmap = result.image.toBitmap()
-                                val scaled =
-                                    if (bitmap.width <= 0 || bitmap.height <= 0) {
-                                        null
-                                    } else if (
-                                        bitmap.width <= NotificationArtworkSizePx &&
-                                        bitmap.height <= NotificationArtworkSizePx
-                                    ) {
-                                        bitmap
-                                    } else {
-                                        val scale =
-                                            minOf(
-                                                NotificationArtworkSizePx.toFloat() / bitmap.width.toFloat(),
-                                                NotificationArtworkSizePx.toFloat() / bitmap.height.toFloat(),
-                                            )
-                                        val targetWidth = (bitmap.width * scale).roundToInt().coerceAtLeast(1)
-                                        val targetHeight = (bitmap.height * scale).roundToInt().coerceAtLeast(1)
-                                        Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true)
-                                    }
-
-                                val mediaSessionBitmap = scaled?.toOwnedMediaSessionBitmap()
+                                val mediaSessionBitmap =
+                                    result.image
+                                        .toBitmap()
+                                        .toOwnedMediaSessionBitmap()
+                                        ?.scaleToNotificationArtwork()
                                 if (mediaSessionBitmap == null) {
                                     return@future createBitmap(64, 64)
                                 }
@@ -118,6 +104,42 @@ class CoilBitmapLoader(
             }
             createBitmap(64, 64)
         }
+}
+
+private fun decodeSampledBitmap(data: ByteArray): Bitmap? {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(data, 0, data.size, bounds)
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+
+    var sampleSize = 1
+    val largestDimension = maxOf(bounds.outWidth, bounds.outHeight)
+    while (largestDimension / (sampleSize * 2) >= NotificationArtworkSizePx) {
+        sampleSize *= 2
+    }
+
+    return BitmapFactory.decodeByteArray(
+        data,
+        0,
+        data.size,
+        BitmapFactory.Options().apply {
+            inSampleSize = sampleSize
+            inPreferredConfig = Bitmap.Config.ARGB_8888
+        },
+    )
+}
+
+private fun Bitmap.scaleToNotificationArtwork(): Bitmap? {
+    if (isRecycled || width <= 0 || height <= 0) return null
+    if (width <= NotificationArtworkSizePx && height <= NotificationArtworkSizePx) return this
+
+    val scale =
+        minOf(
+            NotificationArtworkSizePx.toFloat() / width.toFloat(),
+            NotificationArtworkSizePx.toFloat() / height.toFloat(),
+        )
+    val targetWidth = (width * scale).roundToInt().coerceAtLeast(1)
+    val targetHeight = (height * scale).roundToInt().coerceAtLeast(1)
+    return Bitmap.createScaledBitmap(this, targetWidth, targetHeight, true)
 }
 
 private fun Bitmap.toOwnedMediaSessionBitmap(): Bitmap? {
