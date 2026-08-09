@@ -254,7 +254,7 @@
     <string name="palette_neon_blue">Azul Neón</string>
     <string name="palette_neon_orange">Naranja Neón</string>
     <string name="palette_cyberpunk">Ciberpunk</string>
-    <string name="palette_synthwave">Synthwave</string>
+    <string name="palette_synthwave">Retrowave</string>
     <string name="palette_ocean">Océano</string>
     <string name="palette_forest">Bosque Profundo</string>
     <string name="palette_autumn">Otoño</string>
@@ -1120,4 +1120,5 @@
     <string name="scheduled_backup_update_failed">No se pudieron guardar los ajustes de copia de seguridad programada</string>
     <string name="gatekeeper_connection_blocked">Conexión bloqueada por ArchiveTune Remote. Esta aplicación no se ha podido verificar como una compilación oficial de ArchiveTune. Instale una compilación oficial desde https://github.com/rukamori/ArchiveTune o https://t.me/ArchiveTuneGC .</string>
     <string name="enable_megalobiz_lyrics">Activar las letras de Megalobiz</string>
+    <string name="enable_betterlyrics_portato">Activar BetterLyrics Portato</string>
 </resources>
