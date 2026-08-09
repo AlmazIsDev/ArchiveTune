@@ -642,4 +642,10 @@
     <string name="release_type_album">Álbum</string>
     <string name="release_type_single">Single</string>
     <string name="release_metadata">%1$s • %2$d</string>
+    <string name="aod_customize_show_lyric_ticker">Mostrar barra de letras</string>
+    <string name="aod_background_adaptive_art">Arte adaptativa</string>
+    <string name="aod_background_frosted_wallpaper">Papel de parede fosco</string>
+    <string name="aod_background_adaptive_frosted">Fosco adaptativo</string>
+    <string name="aod_clock_bold_digital">Negrito digital</string>
+    <string name="aod_clock_minimal">Mínimo</string>
 </resources>
