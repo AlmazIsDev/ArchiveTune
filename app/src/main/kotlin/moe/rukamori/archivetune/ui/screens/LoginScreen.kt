@@ -8,9 +8,11 @@
 package moe.rukamori.archivetune.ui.screens
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.net.Uri
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
@@ -173,6 +175,21 @@ private class YouTubeLoginWebViewClient(
     private var extractionRunnable: Runnable? = null
     private var lastCapturedCookie: String? = null
 
+    override fun shouldOverrideUrlLoading(
+        view: WebView,
+        request: WebResourceRequest,
+    ): Boolean {
+        val targetUrl = request.url.toString()
+        if (!request.isForMainFrame && !targetUrl.isWebViewLoadableUrl()) return true
+        return handleUrlLoading(view, targetUrl)
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun shouldOverrideUrlLoading(
+        view: WebView,
+        url: String?,
+    ): Boolean = handleUrlLoading(view, url)
+
     override fun onPageFinished(
         view: WebView,
         url: String?,
@@ -230,6 +247,51 @@ private class YouTubeLoginWebViewClient(
         lastCapturedCookie = mergedCookie
         onCookiesCaptured(mergedCookie)
     }
+
+    private fun handleUrlLoading(
+        view: WebView,
+        url: String?,
+    ): Boolean {
+        val targetUrl = url?.takeIf(String::isNotBlank) ?: return false
+        if (targetUrl.isWebViewLoadableUrl()) return false
+
+        targetUrl.intentWebViewUrl()?.let(view::loadUrl)
+        return true
+    }
+}
+
+private fun String.isWebViewLoadableUrl(): Boolean {
+    val scheme = runCatching { Uri.parse(this).scheme?.lowercase() }.getOrNull()
+    return scheme == "http" ||
+        scheme == "https" ||
+        scheme == "javascript" ||
+        scheme == "data" ||
+        scheme == "blob"
+}
+
+private fun String.intentWebViewUrl(): String? {
+    val parsedIntent =
+        runCatching { Intent.parseUri(this, Intent.URI_INTENT_SCHEME) }.getOrNull()
+    return sequenceOf(
+        parsedIntent?.getStringExtra("browser_fallback_url"),
+        parsedIntent?.dataString,
+        intentUriAsHttpsUrl(),
+    ).firstOrNull { it?.isHttpUrl() == true }
+}
+
+private fun String.intentUriAsHttpsUrl(): String? {
+    val intentUri = runCatching { Uri.parse(this) }.getOrNull() ?: return null
+    if (!intentUri.scheme.equals("intent", ignoreCase = true)) return null
+
+    val authority = intentUri.encodedAuthority ?: return null
+    val path = intentUri.encodedPath.orEmpty()
+    val query = intentUri.encodedQuery?.let { "?$it" }.orEmpty()
+    return "https://$authority$path$query"
+}
+
+private fun String.isHttpUrl(): Boolean {
+    val scheme = runCatching { Uri.parse(this).scheme?.lowercase() }.getOrNull()
+    return scheme == "http" || scheme == "https"
 }
 
 private fun String?.isYouTubeUrl(): Boolean {
