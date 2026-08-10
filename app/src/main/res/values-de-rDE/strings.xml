@@ -9,7 +9,7 @@
         <item quantity="one">%d ausgewählt</item>
         <item quantity="other">%d ausgewählt</item>
     </plurals>
-    <string name="history">Hörverlauf</string>
+    <string name="history">Verlauf</string>
     <string name="stats">Statistiken</string>
     <string name="mood_and_genres">Stimmung und Genres</string>
     <string name="account">Konto</string>
@@ -467,7 +467,7 @@
     <string name="sort_descending">Absteigend sortieren</string>
     <string name="sort_ascending">Aufsteigend sortieren</string>
     <string name="your_collection">Deine Sammlung</string>
-    <string name="playing_desc">Spielt</string>
+    <string name="playing_desc">Läuft</string>
     <string name="tracks_label">Titel</string>
     <string name="song_singular">Song</string>
     <string name="more_playlists_desc">Weitere Playlists</string>
@@ -1061,4 +1061,5 @@
     <string name="custom_background_preview_player">Player</string>
     <string name="custom_background_permission_error">ArchiveTune konnte den Zugriff auf dieses Bild nicht aufrechterhalten.</string>
     <string name="eq_signal">Signal</string>
+    <string name="enable_betterlyrics_portato">BetterLyrics Portato aktivieren</string>
 </resources>
