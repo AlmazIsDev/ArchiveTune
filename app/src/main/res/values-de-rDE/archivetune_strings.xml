@@ -96,8 +96,8 @@
     <string name="set_first_lyrics_provider">Bevorzugter Textanbieter</string>
     <string name="audio_quality_max">Max (Beta)</string>
     <string name="percentage_format">%d%%</string>
-    <string name="import_online">Importieren Sie eine „m3u“-Playlist</string>
-    <string name="import_csv">Importieren Sie eine „CSV“-Playlist</string>
+    <string name="import_online">„m3u“-Playlist importieren</string>
+    <string name="import_csv">„CSV“-Playlist importieren</string>
     <string name="playlist_add_local_to_synced_note">Hinweis: Das Hinzufügen lokaler Songs zu synchronisierten/Remote-Playlists wird nicht unterstützt. Jede andere Kombination ist gültig</string>
     <string name="auto_download_on_like">Automatischer Download bei Like</string>
     <string name="auto_download_on_like_desc">Laden Sie Songs automatisch herunter, wenn sie Ihnen gefallen</string>
