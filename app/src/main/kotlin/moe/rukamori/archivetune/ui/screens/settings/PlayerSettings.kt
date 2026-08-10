@@ -254,7 +254,7 @@ fun PlayerSettings(navController: NavController) {
                 androidx.compose.ui.text.input
                     .TextFieldValue(externalDownloaderPackage),
             onDone = { pkg ->
-                onExternalDownloaderPackageChange(pkg)
+                onExternalDownloaderPackageChange(pkg.trim())
                 showExternalDownloaderPackageDialog = false
             },
             onDismiss = { showExternalDownloaderPackageDialog = false },
