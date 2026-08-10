@@ -68,7 +68,6 @@ import moe.rukamori.archivetune.ui.component.PreferenceEntry
 import moe.rukamori.archivetune.ui.component.PreferenceGroup
 import moe.rukamori.archivetune.ui.component.SliderPreference
 import moe.rukamori.archivetune.ui.component.SwitchPreference
-import moe.rukamori.archivetune.ui.component.TagsManagementDialog
 import moe.rukamori.archivetune.ui.component.TextFieldDialog
 import moe.rukamori.archivetune.ui.utils.backToMain
 import moe.rukamori.archivetune.utils.rememberEnumPreference
@@ -224,7 +223,6 @@ fun PlayerSettings(navController: NavController) {
         }
 
     var showArtistSeparatorsDialog by remember { mutableStateOf(false) }
-    var showTagsManagementDialog by remember { mutableStateOf(false) }
     var showExternalDownloaderPackageDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(playerStreamClient, isArchiveTuneExtractorEnabled) {
@@ -247,12 +245,6 @@ fun PlayerSettings(navController: NavController) {
                 onArtistSeparatorsChange(newSeparators)
                 showArtistSeparatorsDialog = false
             },
-        )
-    }
-
-    if (showTagsManagementDialog) {
-        TagsManagementDialog(
-            onDismiss = { showTagsManagementDialog = false },
         )
     }
 
@@ -590,15 +582,6 @@ fun PlayerSettings(navController: NavController) {
                         description = artistSeparators.map { "\"$it\"" }.joinToString("  "),
                         icon = { Icon(painterResource(R.drawable.artist), null) },
                         onClick = { showArtistSeparatorsDialog = true },
-                    )
-                }
-
-                item {
-                    PreferenceEntry(
-                        title = { Text(stringResource(R.string.manage_playlist_tags)) },
-                        description = stringResource(R.string.manage_playlist_tags_desc),
-                        icon = { Icon(painterResource(R.drawable.style), null) },
-                        onClick = { showTagsManagementDialog = true },
                     )
                 }
 
