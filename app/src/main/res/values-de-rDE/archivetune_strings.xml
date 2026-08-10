@@ -46,7 +46,7 @@
     <string name="hide_player_thumbnail_desc">Ersetzen Sie das Albumcover durch das App-Logo im Player</string>
     <string name="already_in_playlist">Bereits in der Playlist:</string>
     <plurals name="n_element">
-        <item quantity="one">%d-Element</item>
+        <item quantity="one">%d Element</item>
         <item quantity="other">%d Elemente</item>
     </plurals>
     <plurals name="n_time">
@@ -105,7 +105,7 @@
     <string name="sensitivity_percentage">%1$d%%</string>
     <string name="clear_song_cache_dialog">Sind Sie sicher, dass Sie alle zwischengespeicherten Songs löschen möchten?</string>
     <string name="clear_image_cache_dialog">Sind Sie sicher, dass Sie alle zwischengespeicherten Bilder löschen möchten?</string>
-    <string name="clear_downloads_dialog">Sind Sie sicher, dass Sie alle Downloads löschen möchten?</string>
+    <string name="clear_downloads_dialog">Bist du sicher, dass du alle Downloads löschen möchtest?</string>
     <string name="disable">Deaktivieren</string>
     <string name="not_logged_in_youtube">Nicht bei YouTube angemeldet</string>
     <string name="default_links">Unterstützte Links öffnen</string>
@@ -159,7 +159,7 @@
     <string name="clear_canvas_cache">Leere Canvas Cache</string>
     <string name="clear_canvas_cache_dialog">Sind sie sich sicher, dass sie alle zwischengespeicherten Canvas leeren wollen?</string>
     <string name="playlist_private_title">Diese playlist war privat</string>
-    <string name="playlist_private_desc">Sie haben auf dies playlist keinen Zugriff.</string>
+    <string name="playlist_private_desc">Du hast keinen Zugriff auf diese Playlist.</string>
     <string name="audio_crossfade_title">Überblendung</string>
     <string name="audio_crossfade_description">Gestaltet den Übergänge zwischen Songs durch Überblenden sanfter.</string>
     <string name="audio_crossfade_dialog_title">Überblendungsdauer</string>
@@ -618,4 +618,12 @@
     <string name="mori_cipher_empty_title">Keine Wiedergabekonfiguration</string>
     <string name="unblock_artist">Blockierung des Künstlers aufheben</string>
     <string name="music_recognition_background_foss_description">Erkennung im Hintergrund ist in der FOSS-Variante nicht verfügbar. Stattdessen öffnet die Schnelleinstellungskachel den Erkennungsbildschirm.</string>
+    <string name="use_system_language">Systemsprache verwenden</string>
+    <string name="import_source_youtube">YouTube Music</string>
+    <string name="import_source_unresolved">Nicht gefunden</string>
+    <string name="import_review_skipped">%1$d übersprungen</string>
+    <string name="import_skip_song">Überspringen</string>
+    <string name="import_include_song">Einschließen</string>
+    <string name="import_filter_all">Alle</string>
+    <string name="change_song_source">Quelle ändern</string>
 </resources>
