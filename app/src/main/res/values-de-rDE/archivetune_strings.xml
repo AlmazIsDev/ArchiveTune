@@ -616,4 +616,6 @@
     <string name="mori_cipher_refresh_success">Wiedergabekonfiguration aktualisiert</string>
     <string name="mori_cipher_refresh_failed">Wiedergabekonfiguration konnte nicht aktualisiert werden</string>
     <string name="mori_cipher_empty_title">Keine Wiedergabekonfiguration</string>
+    <string name="unblock_artist">Blockierung des Künstlers aufheben</string>
+    <string name="music_recognition_background_foss_description">Erkennung im Hintergrund ist in der FOSS-Variante nicht verfügbar. Stattdessen öffnet die Schnelleinstellungskachel den Erkennungsbildschirm.</string>
 </resources>
