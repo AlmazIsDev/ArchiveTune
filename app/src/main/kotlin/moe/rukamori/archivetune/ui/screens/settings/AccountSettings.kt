@@ -9,6 +9,10 @@
 
 package moe.rukamori.archivetune.ui.screens.settings
 
+import android.app.Activity
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -57,6 +61,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedListItem
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SplitButtonDefaults
 import androidx.compose.material3.SplitButtonLayout
 import androidx.compose.material3.Surface
@@ -90,6 +96,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
+import kotlinx.coroutines.flow.collect
 import moe.rukamori.archivetune.App.Companion.forgetAccount
 import moe.rukamori.archivetune.BuildConfig
 import moe.rukamori.archivetune.LocalPlayerAwareWindowInsets
@@ -100,10 +107,14 @@ import moe.rukamori.archivetune.constants.AccountNameKey
 import moe.rukamori.archivetune.constants.DataSyncIdKey
 import moe.rukamori.archivetune.constants.ForceSyncOnAccountSwitchKey
 import moe.rukamori.archivetune.constants.InnerTubeCookieKey
+import moe.rukamori.archivetune.constants.PoTokenGvsKey
+import moe.rukamori.archivetune.constants.PoTokenPlayerKey
+import moe.rukamori.archivetune.constants.PoTokenSourceUrlKey
 import moe.rukamori.archivetune.constants.SavedAccountsKey
 import moe.rukamori.archivetune.constants.SelectedYtmPlaylistsKey
 import moe.rukamori.archivetune.constants.UseLoginForBrowse
 import moe.rukamori.archivetune.constants.VisitorDataKey
+import moe.rukamori.archivetune.constants.WebClientPoTokenEnabledKey
 import moe.rukamori.archivetune.constants.YtmSyncKey
 import moe.rukamori.archivetune.innertube.YouTube
 import moe.rukamori.archivetune.innertube.utils.hasYouTubeLoginCookie
@@ -124,11 +135,15 @@ import moe.rukamori.archivetune.utils.rememberPreference
 import moe.rukamori.archivetune.viewmodels.AccountChannelUiModel
 import moe.rukamori.archivetune.viewmodels.AccountChannelsState
 import moe.rukamori.archivetune.viewmodels.HomeViewModel
+import moe.rukamori.archivetune.viewmodels.PoTokenEvent
+import moe.rukamori.archivetune.viewmodels.PoTokenState
+import moe.rukamori.archivetune.viewmodels.PoTokenViewModel
 import java.util.UUID
 
 private val AccountContentMaxWidth = 840.dp
 private val AvatarSize = 72.dp
 private val RowIconSize = 40.dp
+private const val DEFAULT_PO_TOKEN_SOURCE_URL = "https://youtube.com/account"
 
 @Immutable
 private data class SavedAccountCollection(
@@ -157,6 +172,10 @@ fun AccountSettings(
     val (innerTubeCookie, onInnerTubeCookieChange) = rememberPreference(InnerTubeCookieKey, "")
     val (visitorData, onVisitorDataChange) = rememberPreference(VisitorDataKey, "")
     val (dataSyncId, onDataSyncIdChange) = rememberPreference(DataSyncIdKey, "")
+    val (_, onWebClientPoTokenEnabledChange) = rememberPreference(WebClientPoTokenEnabledKey, false)
+    val (poTokenGvs, onPoTokenGvsChange) = rememberPreference(PoTokenGvsKey, "")
+    val (poTokenPlayer, onPoTokenPlayerChange) = rememberPreference(PoTokenPlayerKey, "")
+    val (poTokenSourceUrl, _) = rememberPreference(PoTokenSourceUrlKey, "")
     val (useLoginForBrowse, onUseLoginForBrowseChange) = rememberPreference(UseLoginForBrowse, true)
     val (ytmSync, onYtmSyncChange) = rememberPreference(YtmSyncKey, true)
     val (forceSyncOnAccountSwitch, onForceSyncOnAccountSwitchChange) =
@@ -184,9 +203,94 @@ fun AccountSettings(
     }
 
     val viewModel: HomeViewModel = hiltViewModel()
+    val poTokenViewModel: PoTokenViewModel = hiltViewModel()
     val accountNameFromViewModel by viewModel.accountName.collectAsStateWithLifecycle()
     val accountImageUrl by viewModel.accountImageUrl.collectAsStateWithLifecycle()
     val accountChannelsState by viewModel.accountChannelsState.collectAsStateWithLifecycle()
+    val poTokenState by poTokenViewModel.state.collectAsStateWithLifecycle()
+    val isPoTokenLoggedIn =
+        remember(poTokenGvs, poTokenPlayer, poTokenState) {
+            (poTokenGvs.isNotBlank() && poTokenPlayer.isNotBlank()) ||
+                poTokenState is PoTokenState.Success
+        }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val extractionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartActivityForResult(),
+        ) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val gvsToken =
+                    result.data
+                        ?.getStringExtra(PoTokenExtractionActivity.EXTRA_GVS_TOKEN)
+                        .orEmpty()
+                val playerToken =
+                    result.data
+                        ?.getStringExtra(PoTokenExtractionActivity.EXTRA_PLAYER_TOKEN)
+                        .orEmpty()
+                val extractedVisitorData =
+                    result.data
+                        ?.getStringExtra(PoTokenExtractionActivity.EXTRA_VISITOR_DATA)
+                        .orEmpty()
+
+                if (gvsToken.isNotBlank() && playerToken.isNotBlank() && extractedVisitorData.isNotBlank()) {
+                    poTokenViewModel.onTokensExtracted(
+                        visitorData = extractedVisitorData,
+                        poToken = gvsToken,
+                        playerToken = playerToken,
+                    )
+                } else {
+                    poTokenViewModel.onExtractionError(context.getString(R.string.token_generation_failed))
+                }
+            } else {
+                val error =
+                    result.data
+                        ?.getStringExtra(PoTokenExtractionActivity.EXTRA_ERROR)
+                        .orEmpty()
+                if (error.isNotBlank()) {
+                    poTokenViewModel.onExtractionError(error)
+                } else {
+                    poTokenViewModel.onExtractionCancelled()
+                }
+            }
+        }
+
+    LaunchedEffect(poTokenViewModel) {
+        poTokenViewModel.events.collect { event ->
+            when (event) {
+                is PoTokenEvent.TokensGenerated -> {
+                    onPoTokenGvsChange(event.gvsToken)
+                    onPoTokenPlayerChange(event.playerToken)
+                    onVisitorDataChange(event.visitorData)
+                    onWebClientPoTokenEnabledChange(true)
+                    snackbarHostState.showSnackbar(context.getString(R.string.tokens_generated))
+                }
+
+                is PoTokenEvent.Error -> snackbarHostState.showSnackbar(event.message)
+            }
+        }
+    }
+
+    val launchPoTokenExtraction =
+        remember(context, extractionLauncher, poTokenSourceUrl, poTokenViewModel) {
+            {
+                poTokenViewModel.onExtractionStarted()
+                val launchUrl = poTokenSourceUrl.takeIf(String::isNotBlank) ?: DEFAULT_PO_TOKEN_SOURCE_URL
+                val intent =
+                    Intent(context, PoTokenExtractionActivity::class.java).apply {
+                        putExtra(PoTokenExtractionActivity.EXTRA_SOURCE_URL, launchUrl)
+                    }
+                extractionLauncher.launch(intent)
+            }
+        }
+    val onGeneratePoToken =
+        remember(isPoTokenLoggedIn, poTokenState, launchPoTokenExtraction) {
+            {
+                if (!isPoTokenLoggedIn && poTokenState !is PoTokenState.Loading) {
+                    launchPoTokenExtraction()
+                }
+            }
+        }
 
     val displayName =
         when {
@@ -268,6 +372,7 @@ fun AccountSettings(
                 .nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             LargeFlexibleTopAppBar(
                 title = {
@@ -437,7 +542,7 @@ fun AccountSettings(
                             subtitle = stringResource(R.string.hidden_playlists_description),
                             onClick = { navController.navigate("settings/hidden_playlists") },
                             index = 0,
-                            count = 2,
+                            count = 3,
                         )
 
                         ExpressiveActionRow(
@@ -455,7 +560,32 @@ fun AccountSettings(
                                 }
                             },
                             index = 1,
-                            count = 2,
+                            count = 3,
+                        )
+
+                        ExpressiveActionRow(
+                            icon = painterResource(R.drawable.security),
+                            title =
+                                if (isPoTokenLoggedIn) {
+                                    stringResource(R.string.web_client_po_token)
+                                } else if (poTokenState is PoTokenState.Loading) {
+                                    stringResource(R.string.extracting_from_url)
+                                } else {
+                                    stringResource(R.string.po_token_generation)
+                                },
+                            subtitle =
+                                if (isPoTokenLoggedIn) {
+                                    stringResource(R.string.tokens_generated)
+                                } else if (poTokenState is PoTokenState.Loading) {
+                                    stringResource(R.string.extracting_from_url)
+                                } else {
+                                    stringResource(R.string.settings_po_token_subtitle)
+                                },
+                            enabled = !isPoTokenLoggedIn && poTokenState !is PoTokenState.Loading,
+                            accent = if (isPoTokenLoggedIn) MaterialTheme.colorScheme.tertiary else null,
+                            onClick = onGeneratePoToken,
+                            index = 2,
+                            count = 3,
                         )
                     }
                 }
@@ -1111,13 +1241,20 @@ private fun ExpressiveActionRow(
     title: String,
     subtitle: String? = null,
     accent: Color? = null,
+    enabled: Boolean = true,
     onClick: () -> Unit,
     index: Int,
     count: Int,
 ) {
-    val tint = accent ?: MaterialTheme.colorScheme.primary
+    val tint =
+        if (enabled) {
+            accent ?: MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+        }
     SegmentedListItem(
         onClick = onClick,
+        enabled = enabled,
         modifier = Modifier.fillMaxWidth(),
         shapes = ListItemDefaults.segmentedShapes(index = index, count = count),
         colors =
@@ -1132,7 +1269,12 @@ private fun ExpressiveActionRow(
                 painter = painterResource(R.drawable.arrow_forward),
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint =
+                    if (enabled) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    },
             )
         },
         supportingContent =

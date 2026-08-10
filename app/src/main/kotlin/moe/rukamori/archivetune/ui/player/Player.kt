@@ -197,7 +197,6 @@ import moe.rukamori.archivetune.ui.menu.PlayerMenu
 import moe.rukamori.archivetune.ui.screens.LOGIN_ROUTE
 import moe.rukamori.archivetune.ui.screens.buildLoginRoute
 import moe.rukamori.archivetune.ui.screens.settings.DarkMode
-import moe.rukamori.archivetune.ui.screens.settings.PO_TOKEN_ROUTE
 import moe.rukamori.archivetune.ui.theme.PlayerColorExtractor
 import moe.rukamori.archivetune.ui.utils.ShowMediaInfo
 import moe.rukamori.archivetune.ui.utils.YtimgResizePolicy
@@ -355,7 +354,7 @@ fun BottomSheetPlayer(
     val navigateToPoTokenLogin =
         remember(navController) {
             {
-                navController.navigate(PO_TOKEN_ROUTE) {
+                navController.navigate("settings/account") {
                     launchSingleTop = true
                 }
             }
@@ -1944,7 +1943,7 @@ fun BottomSheetPlayer(
 
     val activePlaybackError = playbackError
     val isRecoveryDestination =
-        currentRoute?.startsWith(LOGIN_ROUTE) == true || currentRoute == PO_TOKEN_ROUTE
+        currentRoute?.startsWith(LOGIN_ROUTE) == true || currentRoute == "settings/account"
     if (activePlaybackError != null && !isRecoveryDestination) {
         val errorInfo = remember(activePlaybackError) { activePlaybackError.toPlaybackErrorInfo() }
         val loginClick =
