@@ -727,4 +727,8 @@
     <string name="import_saving_progress">Enregistrement : %1$d/%2$d</string>
     <string name="playlist_source_local">Locale</string>
     <string name="playlist_source_online">En ligne</string>
+    <string name="arrange_playlist_tags">Organiser les balises des playlists</string>
+    <string name="arrange_playlist_tags_desc">Choisissez l\'ordre d\'affichage des filtres par balise dans votre bibliothèque</string>
+    <string name="arrange_library_chips">Trier les jetons de la bibliothèque</string>
+    <string name="arrange_library_chips_desc">Choisissez l\'ordre d\'affichage des onglets dans votre bibliothèque</string>
 </resources>
