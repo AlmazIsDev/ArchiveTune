@@ -13,6 +13,9 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
 import android.service.dreams.DreamService
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.OnBackPressedDispatcherOwner
+import androidx.activity.setViewTreeOnBackPressedDispatcherOwner
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -48,16 +51,22 @@ import moe.rukamori.archivetune.ui.player.AodPlayerScreen
 import moe.rukamori.archivetune.ui.theme.ArchiveTuneTheme
 
 @AndroidEntryPoint
-class AodDreamService : DreamService(), LifecycleOwner, SavedStateRegistryOwner {
+class AodDreamService :
+    DreamService(),
+    LifecycleOwner,
+    SavedStateRegistryOwner,
+    OnBackPressedDispatcherOwner {
     @Inject
     lateinit var database: MusicDatabase
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private val lifecycleRegistry = LifecycleRegistry(this)
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
+    private val backPressedDispatcher = OnBackPressedDispatcher { finish() }
 
     override val lifecycle: Lifecycle get() = lifecycleRegistry
     override val savedStateRegistry: SavedStateRegistry get() = savedStateRegistryController.savedStateRegistry
+    override val onBackPressedDispatcher: OnBackPressedDispatcher get() = backPressedDispatcher
 
     private var playerConnection by mutableStateOf<PlayerConnection?>(null)
     private val serviceConnection = object : ServiceConnection {
@@ -95,6 +104,7 @@ class AodDreamService : DreamService(), LifecycleOwner, SavedStateRegistryOwner 
         val composeView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@AodDreamService)
             setViewTreeSavedStateRegistryOwner(this@AodDreamService)
+            setViewTreeOnBackPressedDispatcherOwner(this@AodDreamService)
             setContent {
                 ArchiveTuneTheme {
                     val conn = playerConnection
