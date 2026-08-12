@@ -559,6 +559,12 @@ class MusicService :
         val mediaId: String,
     )
 
+    private data class PlaybackRecoverySnapshot(
+        val mediaId: String,
+        val positionMs: Long,
+        val playWhenReady: Boolean,
+    )
+
     private data class PendingHistoryFinalization(
         val sessionToken: Long,
         val eventId: Long?,
@@ -1231,7 +1237,9 @@ class MusicService :
                     if (player.currentMediaItem != null && player.playWhenReady &&
                         player.playbackState == Player.STATE_IDLE
                     ) {
-                        player.prepare()
+                        if (!preparePlaybackFromSnapshot(capturePlaybackRecoverySnapshot())) {
+                            player.prepare()
+                        }
                         player.play()
                     }
                 }
@@ -3609,6 +3617,8 @@ class MusicService :
     ): Boolean {
         if (isFullyDownloadedMedia) return false
 
+        val recoverySnapshot = capturePlaybackRecoverySnapshot()
+
         val failedUrl = responseException.dataSpec.uri.toString()
         val requestProfile = StreamClientUtils.resolveRequestProfile(failedUrl)
         val authFingerprint = YouTube.currentPlaybackAuthState().fingerprint
@@ -3651,8 +3661,7 @@ class MusicService :
             responseException.responseCode,
             requestProfile.variantLabel,
         )
-        player.prepare()
-        return true
+        return preparePlaybackFromSnapshot(recoverySnapshot)
     }
 
     private fun retryPlaybackAfterNetworkFailure(
@@ -3660,6 +3669,8 @@ class MusicService :
         isFullyDownloadedMedia: Boolean,
     ): Boolean {
         if (isFullyDownloadedMedia) return false
+
+        val recoverySnapshot = capturePlaybackRecoverySnapshot()
 
         playbackUrlCache.remove(mediaId)
         extractorPlaybackUrlCache.remove(mediaId)
@@ -3670,7 +3681,54 @@ class MusicService :
         }
 
         Timber.tag("MusicService").i("Retrying playback for %s after a transient network failure", mediaId)
+        return preparePlaybackFromSnapshot(recoverySnapshot)
+    }
+
+    private fun capturePlaybackRecoverySnapshot(): PlaybackRecoverySnapshot? {
+        val mediaItem = player.currentMediaItem ?: return null
+        val mediaItemIndex = player.currentMediaItemIndex
+        if (mediaItemIndex == C.INDEX_UNSET) return null
+
+        val duration = player.duration
+        val positionMs =
+            player.currentPosition
+                .coerceAtLeast(0L)
+                .let { position ->
+                    if (duration > 0L && duration != C.TIME_UNSET) {
+                        position.coerceAtMost(duration)
+                    } else {
+                        position
+                    }
+                }
+
+        return PlaybackRecoverySnapshot(
+            mediaId = mediaItem.mediaId,
+            positionMs = positionMs,
+            playWhenReady = player.playWhenReady,
+        )
+    }
+
+    private fun preparePlaybackFromSnapshot(snapshot: PlaybackRecoverySnapshot?): Boolean {
+        if (snapshot == null) {
+            player.prepare()
+            return true
+        }
+        if (player.currentMediaItem?.mediaId != snapshot.mediaId) return false
+
+        val currentIndex = player.currentMediaItemIndex
+        val targetIndex =
+            if (currentIndex in 0 until player.mediaItemCount &&
+                player.getMediaItemAt(currentIndex).mediaId == snapshot.mediaId
+            ) {
+                currentIndex
+            } else {
+                (0 until player.mediaItemCount)
+                    .firstOrNull { index -> player.getMediaItemAt(index).mediaId == snapshot.mediaId }
+                    ?: return false
+            }
+        player.seekTo(targetIndex, snapshot.positionMs)
         player.prepare()
+        player.playWhenReady = snapshot.playWhenReady
         return true
     }
 
@@ -6781,7 +6839,9 @@ class MusicService :
             (events.contains(Player.EVENT_PLAYBACK_STATE_CHANGED) && player.playbackState == Player.STATE_READY) ||
             (events.contains(Player.EVENT_IS_PLAYING_CHANGED) && player.isPlaying)
         ) {
-            playbackStreamRecoveryTracker.onPlaybackRecovered(currentMediaId)
+            if (player.isPlaying || (player.playbackState == Player.STATE_READY && !player.playWhenReady)) {
+                playbackStreamRecoveryTracker.onPlaybackRecovered(currentMediaId)
+            }
             currentMediaId
                 ?.let(playbackUrlCache::get)
                 ?.url
@@ -7140,8 +7200,7 @@ class MusicService :
 
         if (!isLocalMedia && isCacheCorruptionError(error, hasAnyCachedData)) {
             // Snapshot on the Main thread before dispatching; these can change.
-            val mediaItemIndex = player.currentMediaItemIndex
-            val resumePosition = player.currentPosition.coerceAtLeast(0L)
+            val recoverySnapshot = capturePlaybackRecoverySnapshot()
 
             Timber.tag("MusicService").w(
                 "Cache corruption / truncated stream for %s (fullyCached=%b); purging caches then retrying",
@@ -7171,10 +7230,14 @@ class MusicService :
                 // Re-prepare ONLY after the purge completes, back on the Main thread, so the
                 // fresh prepare cannot re-read the spans we just deleted.
                 withContext(Dispatchers.Main) {
-                    if (playbackStreamRecoveryTracker.registerRetryAttempt(currentMediaId)) {
-                        player.seekTo(mediaItemIndex, resumePosition)
-                        player.prepare()
-                    } else {
+                    if (player.currentMediaItem?.mediaId != currentMediaId) return@withContext
+                    if (playbackStreamRecoveryTracker.registerRetryAttempt(currentMediaId) &&
+                        preparePlaybackFromSnapshot(recoverySnapshot)
+                    ) {
+                        return@withContext
+                    }
+
+                    if (player.currentMediaItem?.mediaId == currentMediaId) {
                         // Retry budget for this item is spent; fall back to configured behavior.
                         if (dataStore.get(AutoSkipNextOnErrorKey, false)) skipOnError() else stopOnError()
                     }
@@ -7184,18 +7247,19 @@ class MusicService :
         }
 
         if (!isLocalMedia && !isFullyDownloadedMedia && YTPlayerUtils.isBotDetectionException(error)) {
+            val recoverySnapshot = capturePlaybackRecoverySnapshot()
             playbackUrlCache.remove(currentMediaId)
             extractorPlaybackUrlCache.remove(currentMediaId)
             YTPlayerUtils.invalidateCachedStreamUrls(currentMediaId)
             YTPlayerUtils.clearPlaybackAuthCaches()
             if (playbackStreamRecoveryTracker.registerRetryAttempt(currentMediaId)) {
                 Timber.tag("MusicService").i("Retrying playback for %s after bot-detection source error", currentMediaId)
-                player.prepare()
-                return
+                if (preparePlaybackFromSnapshot(recoverySnapshot)) return
             }
         }
 
         if (!isLocalMedia && !isFullyDownloadedMedia && YTPlayerUtils.isBadStreamPlayerResponseException(error)) {
+            val recoverySnapshot = capturePlaybackRecoverySnapshot()
             playbackUrlCache.remove(currentMediaId)
             extractorPlaybackUrlCache.remove(currentMediaId)
             YTPlayerUtils.invalidateCachedStreamUrls(currentMediaId)
@@ -7217,7 +7281,7 @@ class MusicService :
                                 "Retrying playback for %s after refreshing stream session",
                                 currentMediaId,
                             )
-                            player.prepare()
+                            preparePlaybackFromSnapshot(recoverySnapshot)
                         }
                     }
                 }
@@ -7226,6 +7290,7 @@ class MusicService :
         }
 
         if (!isLocalMedia && !isFullyDownloadedMedia && isRetryableRemoteParserFailure(error)) {
+            val recoverySnapshot = capturePlaybackRecoverySnapshot()
             val failedUrl =
                 playbackUrlCache[currentMediaId]?.url
                     ?: extractorPlaybackUrlCache[currentMediaId]?.url
@@ -7250,8 +7315,7 @@ class MusicService :
                     currentMediaId,
                     error.errorCode,
                 )
-                player.prepare()
-                return
+                if (preparePlaybackFromSnapshot(recoverySnapshot)) return
             }
         }
 
