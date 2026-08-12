@@ -303,7 +303,8 @@ private class GmsCastMediaItemConverter(
         }
 
     private fun MediaItem.resolveForReceiver(): MediaItem {
-        val uri = localConfiguration?.uri ?: return this
+        val localConfiguration = localConfiguration ?: return this
+        val uri = localConfiguration.uri
         val castMimeType = mediaItemResolver.mimeTypeForCast(this)
         val receiverItem =
             castMimeType
