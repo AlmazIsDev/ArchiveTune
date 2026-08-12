@@ -127,6 +127,7 @@ import moe.rukamori.archivetune.MainActivity
 import moe.rukamori.archivetune.R
 import moe.rukamori.archivetune.aod.ACTION_AOD_MODE
 import moe.rukamori.archivetune.constants.AodAutoStartScreenOffKey
+import moe.rukamori.archivetune.constants.AodModeEnabledKey
 import moe.rukamori.archivetune.cast.CastMediaItemResolver
 import moe.rukamori.archivetune.cast.CastPlaybackRepository
 import moe.rukamori.archivetune.cast.CastPlaybackRepositoryLocator
@@ -1152,8 +1153,10 @@ class MusicService :
             override fun onReceive(ctx: Context?, intent: Intent?) {
                 if (intent?.action != Intent.ACTION_SCREEN_OFF) return
                 scope.launch {
-                    val autoStartAod = dataStore.data.map { it[AodAutoStartScreenOffKey] ?: true }.first()
-                    if (!autoStartAod || !player.isPlaying) return@launch
+                    val preferences = dataStore.data.first()
+                    val aodEnabled = preferences[AodModeEnabledKey] ?: true
+                    val autoStartAod = preferences[AodAutoStartScreenOffKey] ?: true
+                    if (!aodEnabled || !autoStartAod || !player.isPlaying) return@launch
 
                     val pm = getSystemService(Context.POWER_SERVICE) as? PowerManager
                     val aodLaunchWl = pm?.newWakeLock(
