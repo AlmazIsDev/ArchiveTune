@@ -521,8 +521,6 @@
     <string name="widget_previous">Vorheriger</string>
     <string name="widget_tap_to_open">Tippe, um ArchiveTune zu öffnen</string>
     <string name="removed_n_songs_from_queue">%d Songs aus der Warteschlange entfernt</string>
-    <string name="aod_mode">AOD-Modus</string>
-    <string name="aod_mode_exit">AOD verlassen</string>
     <string name="sort_by_most_played">Meistgespielt</string>
     <string name="slider_style_wavy">Wellig</string>
     <string name="slider_style_thick">Dick</string>
