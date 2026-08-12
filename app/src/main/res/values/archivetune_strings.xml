@@ -114,6 +114,8 @@
     <string name="aod_customize_subtitle">Shape, layout, controls, and ambient styling</string>
     <string name="aod_customize_entry_desc">Customize the always-on player screen</string>
     <string name="aod_customize_preview">Live preview</string>
+    <string name="aod_customize_mode_enabled">Enable AOD mode</string>
+    <string name="aod_customize_mode_enabled_desc">Allow ArchiveTune to show the always-on player screen</string>
     <string name="aod_customize_visibility">Visibility</string>
     <string name="aod_customize_show_thumbnail">Show thumbnail</string>
     <string name="aod_customize_show_artist">Show artist</string>

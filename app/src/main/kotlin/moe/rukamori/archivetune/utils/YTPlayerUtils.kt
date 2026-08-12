@@ -423,7 +423,11 @@ object YTPlayerUtils {
     ): YouTubeClient =
         when (preferredStreamClient) {
             PlayerStreamClient.ANDROID_VR -> {
-                ANDROID_VR_1_65_10
+                if (authState.hasPlaybackLoginContext && !hasCompleteWebPlaybackPoToken(authState)) {
+                    WEB_PRIMARY
+                } else {
+                    ANDROID_VR_1_65_10
+                }
             }
 
             PlayerStreamClient.WEB_REMIX -> {
@@ -772,6 +776,7 @@ object YTPlayerUtils {
         var streamClientUsed: YouTubeClient? = null
         var didRepairAuthAfterBotDetection = false
         var didRetryWithoutRejectedLoginContext = false
+        var didAttemptGvsPoTokenRecovery = false
 
         var metadataClient =
             if (authState.hasPlaybackLoginContext && !hasCompleteWebPlaybackPoToken(authState)) {
@@ -914,6 +919,23 @@ object YTPlayerUtils {
                     client,
                 )}",
             )
+
+            if (
+                !didAttemptGvsPoTokenRecovery &&
+                    client != WEB_PRIMARY &&
+                    authState.sessionId != null &&
+                    PlaybackAuthState.supportsGvsPoToken(client) &&
+                    authState.resolveGvsPoToken(client).isNullOrBlank()
+            ) {
+                didAttemptGvsPoTokenRecovery = true
+                try {
+                    authState = mintWebPlaybackPoTokens(videoId, authState)
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (e: Exception) {
+                    Timber.tag(logTag).w(e, "PoToken generation failed for stream client ${client.clientName}")
+                }
+            }
 
             if (client != MAIN_CLIENT && client.loginRequired && !requestUsesCookieAuthentication) {
                 Timber.tag(logTag).i(

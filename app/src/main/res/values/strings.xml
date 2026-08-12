@@ -159,6 +159,8 @@
     <string name="action_download">Download</string>
     <string name="downloading">Downloading</string>
     <string name="remove_download">Remove download</string>
+    <string name="remove_download_confirm">Are you sure you want to remove this downloaded item? This action cannot be undone.</string>
+    <string name="remove_download_section_confirm">Are you sure you want to remove all downloads in this section? This action cannot be undone.</string>
     <string name="download_progress_percent">%1$d%%</string>
     <string name="import_playlist">Import playlist</string>
     <string name="import_failed">Import failed</string>
@@ -567,7 +569,7 @@
     <string name="external_downloader">External Downloader</string>
     <string name="external_downloader_desc">Download songs through an external app by package name</string>
     <string name="external_downloader_package">Downloader App Package</string>
-    <string name="external_downloader_package_desc">Package name of the external downloader app (e.g. com.deniscerri.ytdl)</string>
+    <string name="external_downloader_package_desc">Package name or app name of the external downloader (e.g. com.deniscerri.ytdl or YTDLnis)</string>
     <string name="open_with_downloader">Open with Downloader</string>
     <string name="external_downloader_not_installed">External downloader app is not installed</string>
     <string name="external_downloader_not_configured">No external downloader configured. Set one in Settings â†’ Player.</string>

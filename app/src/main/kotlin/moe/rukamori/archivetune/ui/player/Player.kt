@@ -197,7 +197,6 @@ import moe.rukamori.archivetune.ui.menu.PlayerMenu
 import moe.rukamori.archivetune.ui.screens.LOGIN_ROUTE
 import moe.rukamori.archivetune.ui.screens.buildLoginRoute
 import moe.rukamori.archivetune.ui.screens.settings.DarkMode
-import moe.rukamori.archivetune.ui.screens.settings.PO_TOKEN_ROUTE
 import moe.rukamori.archivetune.ui.theme.PlayerColorExtractor
 import moe.rukamori.archivetune.ui.utils.ShowMediaInfo
 import moe.rukamori.archivetune.ui.utils.YtimgResizePolicy
@@ -355,7 +354,7 @@ fun BottomSheetPlayer(
     val navigateToPoTokenLogin =
         remember(navController) {
             {
-                navController.navigate(PO_TOKEN_ROUTE) {
+                navController.navigate("settings/account") {
                     launchSingleTop = true
                 }
             }
@@ -828,7 +827,14 @@ fun BottomSheetPlayer(
                     }
                 } else {
                     position = currentPlayerPosition
-                    duration = currentPlayerDuration
+                    if (currentPlayerDuration > 0L && currentPlayerDuration != C.TIME_UNSET) {
+                        duration = currentPlayerDuration
+                    } else if (duration <= 0L || duration == C.TIME_UNSET) {
+                        mediaMetadata?.let {
+                            val metadataDuration = it.duration.toLong() * 1000
+                            if (metadataDuration > 0L) duration = metadataDuration
+                        }
+                    }
                     if (!isUserSeeking) {
                         sliderPosition?.let { targetPosition ->
                             val clampedTargetPosition =
@@ -897,15 +903,17 @@ fun BottomSheetPlayer(
             }
         }
 
-    BackHandler(
-        enabled =
-            queueSheetState.isExpandedOrExpanding ||
-                state.isExpandedOrExpanding,
-    ) {
-        when {
-            isLyricsScreenVisible && state.isExpandedOrExpanding -> isLyricsScreenVisible = false
-            queueSheetState.isExpandedOrExpanding -> queueSheetState.collapseSoft()
-            state.isExpandedOrExpanding -> state.collapseSoft()
+    if (!aodModeEnabled) {
+        BackHandler(
+            enabled =
+                queueSheetState.isExpandedOrExpanding ||
+                    state.isExpandedOrExpanding,
+        ) {
+            when {
+                isLyricsScreenVisible && state.isExpandedOrExpanding -> isLyricsScreenVisible = false
+                queueSheetState.isExpandedOrExpanding -> queueSheetState.collapseSoft()
+                state.isExpandedOrExpanding -> state.collapseSoft()
+            }
         }
     }
 
@@ -1075,6 +1083,7 @@ fun BottomSheetPlayer(
         onDismiss = {
             playerConnection.service.stopAndClearPlayback(clearPersistentState = true)
         },
+        backHandlerEnabled = !aodModeEnabled,
         collapsedContent = {
             MiniPlayer(
                 position = position,
@@ -1941,7 +1950,7 @@ fun BottomSheetPlayer(
 
     val activePlaybackError = playbackError
     val isRecoveryDestination =
-        currentRoute?.startsWith(LOGIN_ROUTE) == true || currentRoute == PO_TOKEN_ROUTE
+        currentRoute?.startsWith(LOGIN_ROUTE) == true || currentRoute == "settings/account"
     if (activePlaybackError != null && !isRecoveryDestination) {
         val errorInfo = remember(activePlaybackError) { activePlaybackError.toPlaybackErrorInfo() }
         val loginClick =

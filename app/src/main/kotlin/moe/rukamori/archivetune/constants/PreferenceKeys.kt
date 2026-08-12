@@ -39,6 +39,7 @@ val ArchiveTuneCanvasKey = booleanPreferencesKey("archiveTuneCanvas")
 val ThumbnailCornerRadiusKey = floatPreferencesKey("thumbnailCornerRadius")
 val CropThumbnailToSquareKey = booleanPreferencesKey("cropThumbnailToSquare")
 
+val AodModeEnabledKey = booleanPreferencesKey("aodModeEnabled")
 val AodThumbnailShapeKey = stringPreferencesKey("aodThumbnailShape")
 val AodThumbnailSizeKey = floatPreferencesKey("aodThumbnailSize")
 val AodThumbnailShapeRotationKey = intPreferencesKey("aodThumbnailShapeRotation")

@@ -200,6 +200,7 @@ import moe.rukamori.archivetune.constants.DynamicThemeKey
 import moe.rukamori.archivetune.constants.EnableHapticFeedbackKey
 import moe.rukamori.archivetune.constants.FontPreferenceKey
 import moe.rukamori.archivetune.constants.HasPressedStarKey
+import moe.rukamori.archivetune.constants.AodModeEnabledKey
 import moe.rukamori.archivetune.constants.LaunchCountKey
 import moe.rukamori.archivetune.constants.MiniPlayerBottomSpacing
 import moe.rukamori.archivetune.constants.MiniPlayerHeight
@@ -379,6 +380,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun requestAodMode() {
+        if (!dataStore.get(AodModeEnabledKey, true)) return
         pendingAodModeRequest = true
         startMusicServiceSafely()
         openPendingAodModeIfReady()
@@ -2411,7 +2413,7 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        BackHandler(enabled = playerBottomSheetState.isExpanded) {
+                        BackHandler(enabled = playerBottomSheetState.isExpanded && !aodModeEnabled) {
                             playerBottomSheetState.collapseSoft()
                         }
 
