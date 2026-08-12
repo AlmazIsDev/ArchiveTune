@@ -41,6 +41,7 @@ import android.os.Binder
 import android.os.Build
 import android.os.Handler
 import android.os.PowerManager
+import android.util.LruCache
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.content.getSystemService
@@ -370,6 +371,7 @@ class MusicService :
     private val extractorPlaybackUrlCache = ConcurrentHashMap<String, AuthScopedCacheValue>()
     private val remotePlaybackTrackingUrlCache = ConcurrentHashMap<String, String>()
     private val contentLengthCache = ConcurrentHashMap<String, Long>()
+    private val castMimeTypeCache = LruCache<String, String>(128)
     private val extractorTokenRepository by lazy {
         InMemoryBearerTokenRepository(moe.rukamori.archivetune.BuildConfig.EXTRACTOR_BEARER)
     }
@@ -1100,7 +1102,19 @@ class MusicService :
                 .createPlayer(
                     context = this,
                     localPlayer = localPlayer,
-                    mediaItemResolver = CastMediaItemResolver(::resolveMediaItemForCast),
+                    mediaItemResolver =
+                        object : CastMediaItemResolver {
+                            override fun resolveForCast(mediaItem: MediaItem): MediaItem =
+                                resolveMediaItemForCast(mediaItem)
+
+                            override fun mimeTypeForCast(mediaItem: MediaItem): String? =
+                                mediaItem.localConfiguration?.mimeType
+                                    ?.toCastMimeType()
+                                    ?: mediaItem.localConfiguration
+                                        ?.customCacheKey
+                                        ?.let(castMimeTypeCache::get)
+                                    ?: castMimeTypeCache.get(mediaItem.mediaId)
+                        },
                 ).apply {
                     addListener(this@MusicService)
                     sleepTimer = SleepTimer(scope, this, this@MusicService)
@@ -7437,6 +7451,24 @@ class MusicService :
         }
     }
 
+    private fun String?.toCastMimeType(): String? {
+        val normalized = this?.trim()?.takeIf(String::isNotEmpty) ?: return null
+        val baseType = normalized.substringBefore(';').trim()
+        return normalized.takeIf {
+            baseType.contains('/') && !baseType.endsWith("/*")
+        }
+    }
+
+    private fun FormatEntity.toCastMimeType(): String? {
+        val normalizedMimeType = mimeType.toCastMimeType() ?: return null
+        val normalizedCodecs = codecs.trim()
+        return if (normalizedCodecs.isEmpty() || normalizedMimeType.contains("codecs=", ignoreCase = true)) {
+            normalizedMimeType
+        } else {
+            "$normalizedMimeType; codecs=\"$normalizedCodecs\""
+        }
+    }
+
     private fun resolveMediaItemForCast(mediaItem: MediaItem): MediaItem {
         val localConfiguration = mediaItem.localConfiguration ?: return mediaItem
         val uri = localConfiguration.uri
@@ -7454,12 +7486,8 @@ class MusicService :
                 allowCacheShortCircuit = false,
             )
         val resolvedMimeType =
-            localConfiguration.mimeType
-                ?.substringBefore(";")
-                ?.takeIf { it.isNotBlank() && !it.endsWith("/*") }
-                ?: runBlocking(Dispatchers.IO) {
-                    database.format(mediaId).first()?.mimeType?.substringBefore(";")
-                }
+            localConfiguration.mimeType.toCastMimeType()
+                ?: castMimeTypeCache.get(mediaId)
         return mediaItem
             .buildUpon()
             .setUri(resolvedDataSpec.uri)
@@ -7480,6 +7508,7 @@ class MusicService :
                 database.format(mediaId).first()
             }
         storedFormat?.let { format ->
+            format.toCastMimeType()?.let { castMimeTypeCache.put(mediaId, it) }
             audioNormalizationFactorCache[mediaId] = calculateAudioNormalizationFactor(format, normalizeAudio = true)
         }
         val knownContentLength =
@@ -7650,6 +7679,7 @@ class MusicService :
             ?.remotePlaybackTrackingUrl()
             ?.let { remotePlaybackTrackingUrlCache[mediaId] = it }
         val format = nonNullPlayback.format
+        format.mimeType.toCastMimeType()?.let { castMimeTypeCache.put(mediaId, it) }
         val loudnessDb = nonNullPlayback.audioConfig?.loudnessDb
         val perceptualLoudnessDb = nonNullPlayback.audioConfig?.perceptualLoudnessDb
         val resolvedContentLength = format.contentLength ?: 0L
