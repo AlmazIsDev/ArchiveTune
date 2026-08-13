@@ -69,7 +69,7 @@ class DownloadUtil
         private val audioQuality by enumPreference(context, AudioQualityKey, AudioQuality.AUTO)
         private val downloadScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         private val songUrlCache = ConcurrentHashMap<String, AuthScopedCacheValue>()
-        private val downloadExecutor = Executors.newFixedThreadPool(DEFAULT_MAX_PARALLEL_DOWNLOADS)
+        private val downloadExecutor = Executors.newSingleThreadExecutor()
 
         private val mediaOkHttpClient: OkHttpClient by lazy {
             OkHttpClient
@@ -83,7 +83,7 @@ class DownloadUtil
                 .dispatcher(
                     okhttp3.Dispatcher().apply {
                         maxRequests = MAX_DOWNLOAD_HTTP_REQUESTS
-                        maxRequestsPerHost = DEFAULT_MAX_PARALLEL_DOWNLOADS
+                        maxRequestsPerHost = MAX_DOWNLOAD_HTTP_REQUESTS
                     },
                 ).connectionPool(
                     ConnectionPool(
@@ -182,7 +182,7 @@ class DownloadUtil
                 dataSourceFactory,
                 downloadExecutor,
             ).apply {
-                maxParallelDownloads = DEFAULT_MAX_PARALLEL_DOWNLOADS
+                maxParallelDownloads = MAX_PARALLEL_DOWNLOADS
                 addListener(
                     object : DownloadManager.Listener {
                         override fun onDownloadChanged(
@@ -303,9 +303,9 @@ class DownloadUtil
         }
 
         companion object {
-            private const val DEFAULT_MAX_PARALLEL_DOWNLOADS = 6
+            private const val MAX_PARALLEL_DOWNLOADS = 1
             private const val MAX_IDLE_DOWNLOAD_CONNECTIONS = 12
-            private const val MAX_DOWNLOAD_HTTP_REQUESTS = 24
+            private const val MAX_DOWNLOAD_HTTP_REQUESTS = 1
             private const val DOWNLOAD_CONNECTION_KEEP_ALIVE_MINUTES = 5L
             private const val DOWNLOAD_WRITE_BUFFER_SIZE = 256 * 1024
         }
