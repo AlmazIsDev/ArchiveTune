@@ -634,4 +634,21 @@
     <string name="about_content_desc_website">Situs Web</string>
     <string name="about_content_desc_discord">Discord</string>
     <string name="about_content_desc_telegram">Telegram</string>
+    <string name="aod_clock_minimal">Minimalis</string>
+    <string name="aod_customize_security_power">Sekuriti &amp; Daya</string>
+    <string name="aod_customize_smart_lock">Kunci Pintar &amp; Tampilan</string>
+    <string name="aod_customize_shake_to_unlock">Goyangkan Untuk Membuka Kunci</string>
+    <string name="aod_customize_shake_to_unlock_desc">Goyangkan HP Anda Untuk Keluar Dari Mode Kunci Sentuh</string>
+    <string name="aod_customize_auto_lock">Kunci Otomatis saat AOD Aktif</string>
+    <string name="aod_customize_auto_lock_desc">Layar Terkunci Otomatis Setelah Jeda Saat Masuk AOD</string>
+    <string name="aod_customize_auto_lock_delay">Jeda Kunci Otomatis</string>
+    <string name="aod_customize_marquee_titles">Judul Lagu Berjalan</string>
+    <string name="aod_background_adaptive_art">Sampul Adaptif</string>
+    <string name="aod_background_frosted_wallpaper">Wallpaper Buram</string>
+    <string name="aod_customize_show_lyric_ticker">Tampilkan Lirik Berjalan</string>
+    <string name="aod_background_adaptive_frosted">Buram Adaptif</string>
+    <string name="aod_clock_pixel_stacked">Pixel Bertumpuk</string>
+    <string name="aod_clock_elegant_thin">Elegan Tipis</string>
+    <string name="aod_clock_bold_digital">Tebal Digital</string>
+    <string name="aod_customize_ambient_brightness">Kecerahan Sekitar</string>
 </resources>
