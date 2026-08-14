@@ -406,4 +406,5 @@
     <string name="aod_shape_pixel_circle">Пиксельный круг</string>
     <string name="aod_background_pure_black">Идеальный черный</string>
     <string name="aod_background_soft_radial">Смягчененый круглый</string>
+    <string name="force_sync_on_switch_account_desc">Ре-синхронизировать плейлисты, любимые песни, исполнителей, и альбомы выбранного аккаунта после смены</string>
 </resources>
