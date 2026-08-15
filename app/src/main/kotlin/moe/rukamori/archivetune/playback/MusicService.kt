@@ -2876,10 +2876,10 @@ class MusicService :
 
         var handoffCompleted = false
         try {
-            localPlayer.pauseAtEndOfMediaItems = false
-            player.volume = 0f
             crossfadeHandoffInProgress = true
             crossfadeHandoffProgress = 0f
+            localPlayer.pauseAtEndOfMediaItems = false
+            player.volume = 0f
             player.seekTo(targetIndex, incomingPosition)
             player.playWhenReady = shouldContinuePlayback
             if (shouldContinuePlayback) {
@@ -6798,7 +6798,8 @@ class MusicService :
                 val isEndOfOutgoingItemPause =
                     !playWhenReady &&
                         reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM &&
-                        localPlayer.pauseAtEndOfMediaItems
+                        crossfadePlaybackRequested &&
+                        (localPlayer.pauseAtEndOfMediaItems || crossfadeHandoffInProgress)
                 if (!isEndOfOutgoingItemPause) {
                     crossfadePlaybackRequested = playWhenReady
                     secondaryPlayer.playWhenReady = crossfadePlaybackRequested
@@ -6834,7 +6835,12 @@ class MusicService :
         super.onIsPlayingChanged(isPlaying)
         secondaryCrossfadePlayer?.let { secondaryPlayer ->
             if (isCrossfading && !crossfadeHandoffInProgress) {
-                if (isPlaying) {
+                val isEndOfOutgoingItemPause =
+                    !isPlaying &&
+                        !player.playWhenReady &&
+                        crossfadePlaybackRequested &&
+                        localPlayer.pauseAtEndOfMediaItems
+                if (isPlaying || isEndOfOutgoingItemPause) {
                     secondaryPlayer.play()
                 } else {
                     secondaryPlayer.pause()
