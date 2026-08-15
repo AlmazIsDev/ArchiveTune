@@ -685,4 +685,6 @@
     <string name="change_song_source_desc">從本地或 YouTube Music 替換此播放清單條目。</string>
     <string name="replace_song">更換歌曲</string>
     <string name="song_source_changed">歌曲來源已更改。</string>
+    <string name="arrange_playlist_tags">排列播放清單標籤</string>
+    <string name="arrange_playlist_tags_desc">選擇資料庫中標籤篩選器的顯示順序</string>
 </resources>
