@@ -342,15 +342,7 @@ fun PlayerSettings(navController: NavController) {
                                 }
 
                                 PlayerStreamClient.ARCHIVETUNE_EXTRACTOR -> {
-                                    if (isArchiveTuneExtractorEnabled) {
-                                        stringResource(
-                                            R.string.player_stream_client_archivetune_extractor_desc,
-                                        )
-                                    } else {
-                                        stringResource(
-                                            R.string.player_stream_client_archivetune_extractor_login_required,
-                                        )
-                                    }
+                                    "This is not available yet"
                                 }
 
                                 else -> {

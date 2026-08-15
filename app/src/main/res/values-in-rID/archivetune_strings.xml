@@ -566,8 +566,6 @@
     <string name="release_type_single">Single</string>
     <string name="release_metadata">%1$s • %2$d</string>
     <string name="player_stream_client_archivetune_extractor">Ekstraktor ArchiveTune</string>
-    <string name="player_stream_client_archivetune_extractor_desc">Menggunakan ekstraktor backend ArchiveTune untuk aliran pemutaran. Lebih disukai Audio Kualitas Tinggi Otomatis.</string>
-    <string name="player_stream_client_archivetune_extractor_login_required">Anda Harus Login Menggunakan Akun Google dan PoToken di Pengaturan untuk menggunakan ini</string>
     <string name="top_albums">Album Teratas</string>
     <string name="stats_top_songs">Lagu teratas</string>
     <string name="stats_show_all_songs">Tampilkan semua %1$d lagu</string>

@@ -478,8 +478,6 @@
     <string name="crossfade_gapless_title">تخطي ألبومات التشغيل المتواصل</string>
     <string name="crossfade_gapless_description">عدم تطبيق التلاشي المتقاطع على الأغاني المتتالية من نفس الألبوم.</string>
     <string name="player_stream_client_archivetune_extractor">مستخرج ArchiveTune</string>
-    <string name="player_stream_client_archivetune_extractor_desc">يستخدم مستخرج ArchiveTune الخلفي لبث التشغيل. يفضل الصوت التلقائي عالي الجودة.</string>
-    <string name="player_stream_client_archivetune_extractor_login_required">يجب عليك تسجيل الدخول باستخدام حساب Google وتوكن PoToken في الإعدادات لاستخدام هذا</string>
     <string name="settings_appearance_subtitle">السمات، التخطيط، والأنماط البصرية</string>
     <string name="settings_playback_title">التشغيل</string>
     <string name="settings_playback_subtitle">سلوك الصوت، التلاشي المتقاطع، والتشغيل في الخلفية</string>

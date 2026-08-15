@@ -481,8 +481,6 @@
     <string name="player_stream_client_web_remix">ウェブリミックス</string>
     <string name="player_stream_client_web_remix_desc">速度を犠牲にして拡張フォーマットをサポートします。 JavaScript 署名の復号化により、起動に最大 5 ～ 10 秒の遅延が発生します。</string>
     <string name="player_stream_client_archivetune_extractor">ArchiveTune エクストラクタ</string>
-    <string name="player_stream_client_archivetune_extractor_desc">再生ストリームに ArchiveTune バックエンド エクストラクターを使用します。自動高品質オーディオを優先します。</string>
-    <string name="player_stream_client_archivetune_extractor_login_required">これを使用するには、設定で Google アカウントと PoToken を使用してログインする必要があります</string>
     <string name="settings_section_player_content">プレーヤー &amp; のコンテンツ</string>
     <string name="settings_appearance_subtitle">テーマ、レイアウト、視覚スタイル</string>
     <string name="settings_playback_title">再生</string>

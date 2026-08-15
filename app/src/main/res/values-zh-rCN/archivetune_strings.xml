@@ -460,8 +460,6 @@
     <string name="crossfade_gapless_title">保持无缝专辑原样播放</string>
     <string name="crossfade_gapless_description">同一专辑下的连续歌曲不应用交叉淡入淡出</string>
     <string name="player_stream_client_archivetune_extractor">ArchiveTune 专属解析器</string>
-    <string name="player_stream_client_archivetune_extractor_desc">使用 ArchiveTune 后端解析器获取播放流，优先提供自动高质量音频</string>
-    <string name="player_stream_client_archivetune_extractor_login_required">必须先在“设置”中登录 Google 账号并绑定 PO Token 方可使用此功能</string>
     <string name="settings_appearance_subtitle">主题、布局与外观样式</string>
     <string name="settings_playback_title">播放设置</string>
     <string name="settings_playback_subtitle">音频行为、淡入淡出及后台播放控制</string>
