@@ -1,3 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="explore">Odkrywaj</string>
+    <string name="suggestions">Propozycje</string>
+    <string name="music_recognition_tap_to_listen">Dotknij, aby odsłuchać</string>
+    <string name="music_recognition_listening">Słuchanie…</string>
 </resources>
