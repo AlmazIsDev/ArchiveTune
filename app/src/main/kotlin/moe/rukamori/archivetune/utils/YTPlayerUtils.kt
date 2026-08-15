@@ -24,6 +24,7 @@ import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.ANDROID
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.ANDROID_MUSIC
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.ANDROID_TESTSUITE
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.ANDROID_UNPLUGGED
+import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.ANDROID_VR_NO_AUTH
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.ANDROID_VR_1_65_10
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.IOS
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.IOS_MUSIC
@@ -134,7 +135,7 @@ object YTPlayerUtils {
             WEB_CREATOR,
             TVHTML5_DOWNGRADED,
             TVHTML5,
-            ANDROID_VR_1_65_10,
+            ANDROID_VR_NO_AUTH,
             IOS,
             MOBILE,
             MWEB,
@@ -440,9 +441,9 @@ object YTPlayerUtils {
         when (preferredStreamClient) {
             PlayerStreamClient.ANDROID_VR -> {
                 when {
+                    !authState.hasPlaybackLoginContext -> ANDROID_VR_NO_AUTH
                     hasWebGvsPoToken(authState) -> WEB_REMIX
-                    authState.hasPlaybackLoginContext -> WEB_PRIMARY
-                    else -> ANDROID_VR_1_65_10
+                    else -> WEB_PRIMARY
                 }
             }
 
