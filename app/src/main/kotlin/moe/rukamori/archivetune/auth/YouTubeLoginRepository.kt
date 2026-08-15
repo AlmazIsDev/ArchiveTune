@@ -19,9 +19,13 @@ import moe.rukamori.archivetune.constants.AccountEmailKey
 import moe.rukamori.archivetune.constants.AccountNameKey
 import moe.rukamori.archivetune.constants.DataSyncIdKey
 import moe.rukamori.archivetune.constants.InnerTubeCookieKey
+import moe.rukamori.archivetune.constants.PoTokenGvsKey
+import moe.rukamori.archivetune.constants.PoTokenKey
+import moe.rukamori.archivetune.constants.PoTokenPlayerKey
 import moe.rukamori.archivetune.constants.SavedAccountsKey
 import moe.rukamori.archivetune.constants.SelectedYtmPlaylistsKey
 import moe.rukamori.archivetune.constants.VisitorDataKey
+import moe.rukamori.archivetune.constants.WebClientPoTokenEnabledKey
 import moe.rukamori.archivetune.constants.YtmSyncKey
 import moe.rukamori.archivetune.innertube.PlaybackAuthState
 import moe.rukamori.archivetune.innertube.YouTube
@@ -31,8 +35,8 @@ import moe.rukamori.archivetune.utils.SavedAccount
 import moe.rukamori.archivetune.utils.dataStore
 import moe.rukamori.archivetune.utils.decodeSavedAccounts
 import moe.rukamori.archivetune.utils.encodeSavedAccounts
-import moe.rukamori.archivetune.utils.putLegacyPoToken
 import moe.rukamori.archivetune.utils.toPlaybackAuthState
+import moe.rukamori.archivetune.utils.potoken.BotGuardTokenGenerator
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -159,11 +163,42 @@ class YouTubeLoginRepository
             }
         }
 
-        suspend fun savePoToken(value: String?) {
+        suspend fun savePoTokens(
+            gvsToken: String?,
+            playerToken: String?,
+            visitorData: String?,
+        ) {
             withContext(Dispatchers.IO) {
+                val normalizedGvsToken = gvsToken.normalizeAuthValue()
+                val normalizedPlayerToken = playerToken.normalizeAuthValue()
+                val normalizedVisitorData = visitorData.normalizeAuthValue()
+
                 context.dataStore.edit { preferences ->
-                    preferences.putLegacyPoToken(value)
+                    normalizedGvsToken?.let {
+                        preferences[PoTokenKey] = it
+                        preferences[PoTokenGvsKey] = it
+                    } ?: run {
+                        preferences.remove(PoTokenKey)
+                        preferences.remove(PoTokenGvsKey)
+                    }
+                    normalizedPlayerToken?.let { preferences[PoTokenPlayerKey] = it }
+                        ?: preferences.remove(PoTokenPlayerKey)
+                    preferences[WebClientPoTokenEnabledKey] =
+                        normalizedGvsToken != null && normalizedPlayerToken != null
+                    normalizedVisitorData?.let { preferences[VisitorDataKey] = it }
                 }
+
+                val currentAuthState = YouTube.currentPlaybackAuthState()
+                YouTube.authState =
+                    currentAuthState
+                        .copy(
+                            visitorData = normalizedVisitorData ?: currentAuthState.visitorData,
+                            poToken = normalizedGvsToken,
+                            poTokenGvs = normalizedGvsToken,
+                            poTokenPlayer = normalizedPlayerToken,
+                            webClientPoTokenEnabled =
+                                normalizedGvsToken != null && normalizedPlayerToken != null,
+                        ).normalized()
             }
         }
 
@@ -238,13 +273,42 @@ class UpdateYouTubeLoginContextUseCase
         }
     }
 
-class SaveYouTubePoTokenUseCase
+data class GeneratedYouTubePoTokens(
+    val gvsToken: String,
+    val playerToken: String,
+)
+
+class GenerateYouTubePoTokensUseCase
+    @Inject
+    constructor() {
+        suspend operator fun invoke(sessionId: String): GeneratedYouTubePoTokens? =
+            withContext(Dispatchers.IO) {
+                BotGuardTokenGenerator
+                    .mintToken("player", sessionId)
+                    ?.let { result ->
+                        GeneratedYouTubePoTokens(
+                            gvsToken = result.sessionToken,
+                            playerToken = result.playerToken,
+                        )
+                    }
+            }
+    }
+
+class SaveYouTubePoTokensUseCase
     @Inject
     constructor(
         private val repository: YouTubeLoginRepository,
     ) {
-        suspend operator fun invoke(value: String?) {
-            repository.savePoToken(value)
+        suspend operator fun invoke(
+            gvsToken: String?,
+            playerToken: String?,
+            visitorData: String?,
+        ) {
+            repository.savePoTokens(
+                gvsToken = gvsToken,
+                playerToken = playerToken,
+                visitorData = visitorData,
+            )
         }
     }
 
