@@ -70,7 +70,7 @@ class LoginViewModel
         private var loginJob: Job? = null
         private var activeCookie: String? = null
         private var completedCookie: String? = null
-        private var latestPoToken: String? = null
+        private var latestGvsPoToken: String? = null
 
         fun onVisitorDataExtracted(visitorData: String?) {
             val normalized = visitorData.normalizeAuthValue() ?: return
@@ -94,11 +94,9 @@ class LoginViewModel
             activeCookie?.let { startLogin(it, replaceActive = true) }
         }
 
-        fun onPoTokenExtracted(poToken: String?) {
-            val normalized = poToken.normalizeAuthValue() ?: return
-            if (latestPoToken == normalized) return
-
-            latestPoToken = normalized
+        fun onGvsPoTokenExtracted(gvsPoToken: String?) {
+            val normalized = gvsPoToken.normalizeAuthValue() ?: return
+            latestGvsPoToken = normalized
         }
 
         fun onCookiesCaptured(cookie: String?) {
@@ -113,6 +111,9 @@ class LoginViewModel
             if (completedCookie == normalizedCookie) return
             if (!replaceActive && loginJob?.isActive == true && activeCookie == normalizedCookie) return
 
+            if (activeCookie != null && (activeCookie != normalizedCookie || replaceActive)) {
+                latestGvsPoToken = null
+            }
             activeCookie = normalizedCookie
             loginJob?.cancel()
             loginJob =
@@ -166,14 +167,12 @@ class LoginViewModel
                 } catch (throwable: Throwable) {
                     Timber.w(throwable, "Failed to generate YouTube PO tokens during login")
                     null
-                }
-            val gvsToken = generatedTokens?.gvsToken ?: latestPoToken
-            if (gvsToken == null && generatedTokens == null) return
+            }
+            val gvsToken = generatedTokens?.gvsToken ?: latestGvsPoToken
 
             try {
                 saveYouTubePoTokens(
                     gvsToken = gvsToken,
-                    playerToken = generatedTokens?.playerToken,
                     visitorData = visitorData,
                 )
             } catch (cancellation: CancellationException) {

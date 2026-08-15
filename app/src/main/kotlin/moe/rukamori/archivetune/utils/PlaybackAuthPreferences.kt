@@ -33,7 +33,7 @@ fun Preferences.toPlaybackAuthState(): PlaybackAuthState =
         dataSyncId = this[DataSyncIdKey],
         poToken = this[PoTokenKey],
         poTokenGvs = this[PoTokenGvsKey],
-        poTokenPlayer = this[PoTokenPlayerKey],
+        poTokenPlayer = null,
         webClientPoTokenEnabled = this[WebClientPoTokenEnabledKey] ?: false,
     ).normalized()
 

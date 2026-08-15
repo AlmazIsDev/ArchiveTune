@@ -20,7 +20,6 @@ import moe.rukamori.archivetune.constants.AccountNameKey
 import moe.rukamori.archivetune.constants.DataSyncIdKey
 import moe.rukamori.archivetune.constants.InnerTubeCookieKey
 import moe.rukamori.archivetune.constants.PoTokenGvsKey
-import moe.rukamori.archivetune.constants.PoTokenKey
 import moe.rukamori.archivetune.constants.PoTokenPlayerKey
 import moe.rukamori.archivetune.constants.SavedAccountsKey
 import moe.rukamori.archivetune.constants.SelectedYtmPlaylistsKey
@@ -121,6 +120,9 @@ class YouTubeLoginRepository
                         preferences[AccountNameKey] = account.name
                         preferences[AccountEmailKey] = account.email
                         preferences[AccountChannelHandleKey] = account.channelHandle
+                        preferences.remove(PoTokenGvsKey)
+                        preferences.remove(PoTokenPlayerKey)
+                        preferences[WebClientPoTokenEnabledKey] = false
                         preferences[YtmSyncKey] = account.ytmSync
                         preferences[SelectedYtmPlaylistsKey] = account.selectedYtmPlaylists
 
@@ -165,26 +167,17 @@ class YouTubeLoginRepository
 
         suspend fun savePoTokens(
             gvsToken: String?,
-            playerToken: String?,
             visitorData: String?,
         ) {
             withContext(Dispatchers.IO) {
                 val normalizedGvsToken = gvsToken.normalizeAuthValue()
-                val normalizedPlayerToken = playerToken.normalizeAuthValue()
                 val normalizedVisitorData = visitorData.normalizeAuthValue()
 
                 context.dataStore.edit { preferences ->
-                    normalizedGvsToken?.let {
-                        preferences[PoTokenKey] = it
-                        preferences[PoTokenGvsKey] = it
-                    } ?: run {
-                        preferences.remove(PoTokenKey)
-                        preferences.remove(PoTokenGvsKey)
-                    }
-                    normalizedPlayerToken?.let { preferences[PoTokenPlayerKey] = it }
-                        ?: preferences.remove(PoTokenPlayerKey)
-                    preferences[WebClientPoTokenEnabledKey] =
-                        normalizedGvsToken != null && normalizedPlayerToken != null
+                    normalizedGvsToken?.let { preferences[PoTokenGvsKey] = it }
+                        ?: preferences.remove(PoTokenGvsKey)
+                    preferences.remove(PoTokenPlayerKey)
+                    preferences[WebClientPoTokenEnabledKey] = normalizedGvsToken != null
                     normalizedVisitorData?.let { preferences[VisitorDataKey] = it }
                 }
 
@@ -193,11 +186,9 @@ class YouTubeLoginRepository
                     currentAuthState
                         .copy(
                             visitorData = normalizedVisitorData ?: currentAuthState.visitorData,
-                            poToken = normalizedGvsToken,
                             poTokenGvs = normalizedGvsToken,
-                            poTokenPlayer = normalizedPlayerToken,
-                            webClientPoTokenEnabled =
-                                normalizedGvsToken != null && normalizedPlayerToken != null,
+                            poTokenPlayer = null,
+                            webClientPoTokenEnabled = normalizedGvsToken != null,
                         ).normalized()
             }
         }
@@ -275,7 +266,6 @@ class UpdateYouTubeLoginContextUseCase
 
 data class GeneratedYouTubePoTokens(
     val gvsToken: String,
-    val playerToken: String,
 )
 
 class GenerateYouTubePoTokensUseCase
@@ -284,11 +274,10 @@ class GenerateYouTubePoTokensUseCase
         suspend operator fun invoke(sessionId: String): GeneratedYouTubePoTokens? =
             withContext(Dispatchers.IO) {
                 BotGuardTokenGenerator
-                    .mintToken("player", sessionId)
+                    .mintToken("login", sessionId)
                     ?.let { result ->
                         GeneratedYouTubePoTokens(
                             gvsToken = result.sessionToken,
-                            playerToken = result.playerToken,
                         )
                     }
             }
@@ -301,12 +290,10 @@ class SaveYouTubePoTokensUseCase
     ) {
         suspend operator fun invoke(
             gvsToken: String?,
-            playerToken: String?,
             visitorData: String?,
         ) {
             repository.savePoTokens(
                 gvsToken = gvsToken,
-                playerToken = playerToken,
                 visitorData = visitorData,
             )
         }
