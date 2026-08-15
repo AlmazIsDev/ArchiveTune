@@ -204,7 +204,11 @@ object StreamClientUtils {
                 }
             }
 
-            clientName == "TVHTML5_SIMPLY_EMBEDDED_PLAYER" || clientName == "TVHTML5_SIMPLY" -> {
+            clientName == "TVHTML5_SIMPLY" -> {
+                YouTubeClient.TVHTML5_SIMPLY
+            }
+
+            clientName == "TVHTML5_SIMPLY_EMBEDDED_PLAYER" -> {
                 YouTubeClient.TVHTML5_SIMPLY_EMBEDDED_PLAYER
             }
 

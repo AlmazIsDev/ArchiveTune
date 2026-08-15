@@ -24,8 +24,10 @@ import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.ANDROID
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.ANDROID_MUSIC
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.ANDROID_TESTSUITE
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.ANDROID_UNPLUGGED
-import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.ANDROID_VR_NO_AUTH
+import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.ANDROID_VR_1_43_32
+import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.ANDROID_VR_1_61_48
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.ANDROID_VR_1_65_10
+import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.ANDROID_VR_NO_AUTH
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.IOS
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.IOS_MUSIC
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.IPADOS
@@ -33,6 +35,7 @@ import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.MOBILE
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.MWEB
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.TVHTML5
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.TVHTML5_DOWNGRADED
+import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.TVHTML5_SIMPLY
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.TVHTML5_SIMPLY_EMBEDDED_PLAYER
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.VISIONOS
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.WEB
@@ -131,14 +134,21 @@ object YTPlayerUtils {
      */
     private val STREAM_FALLBACK_CLIENTS: Array<YouTubeClient> =
         arrayOf(
-            WEB_REMIX,
-            WEB_CREATOR,
             TVHTML5_DOWNGRADED,
+            WEB_EMBEDDED,
+            WEB_CREATOR,
+            WEB_REMIX,
+            MWEB,
+            WEB,
+            WEB_PRIMARY,
             TVHTML5,
+            TVHTML5_SIMPLY,
             ANDROID_VR_NO_AUTH,
+            ANDROID_VR_1_65_10,
+            ANDROID_VR_1_61_48,
+            ANDROID_VR_1_43_32,
             IOS,
             MOBILE,
-            MWEB,
             ANDROID_MUSIC,
             IOS_MUSIC,
             ANDROID_CREATOR,
@@ -147,8 +157,6 @@ object YTPlayerUtils {
             IPADOS,
             VISIONOS,
             TVHTML5_SIMPLY_EMBEDDED_PLAYER,
-            WEB,
-            WEB_EMBEDDED,
         )
 
     private data class CachedStreamUrl(
@@ -442,14 +450,13 @@ object YTPlayerUtils {
             PlayerStreamClient.ANDROID_VR -> {
                 when {
                     !authState.hasPlaybackLoginContext -> ANDROID_VR_NO_AUTH
-                    hasWebGvsPoToken(authState) -> WEB_REMIX
-                    else -> WEB_PRIMARY
+                    else -> TVHTML5_DOWNGRADED
                 }
             }
 
             PlayerStreamClient.WEB_REMIX -> {
-                if (authState.hasPlaybackLoginContext && !hasWebGvsPoToken(authState)) {
-                    WEB_PRIMARY
+                if (authState.hasPlaybackLoginContext) {
+                    TVHTML5_DOWNGRADED
                 } else {
                     WEB_REMIX
                 }
@@ -1579,6 +1586,14 @@ object YTPlayerUtils {
         var cause: Throwable? = error
         while (cause != null) {
             if (cause is BadStreamPlayerResponseException) return true
+            if (
+                cause.message?.contains(
+                    "YouTube playback stream clients returned no playable response",
+                    ignoreCase = true,
+                ) == true
+            ) {
+                return true
+            }
             cause = cause.cause
         }
         return false
