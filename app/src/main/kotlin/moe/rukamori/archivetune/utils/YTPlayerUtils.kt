@@ -439,10 +439,10 @@ object YTPlayerUtils {
     ): YouTubeClient =
         when (preferredStreamClient) {
             PlayerStreamClient.ANDROID_VR -> {
-                if (authState.hasPlaybackLoginContext && !hasWebGvsPoToken(authState)) {
-                    WEB_PRIMARY
-                } else {
-                    ANDROID_VR_1_65_10
+                when {
+                    hasWebGvsPoToken(authState) -> WEB_REMIX
+                    authState.hasPlaybackLoginContext -> WEB_PRIMARY
+                    else -> ANDROID_VR_1_65_10
                 }
             }
 
