@@ -1,3 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="music_recognition_listening">กำลังฟัง…</string>
+    <string name="music_recognition_processing">กำลังประมวลผล…</string>
+    <string name="music_recognition_no_match">ไม่พบเพลงที่ตรงกัน</string>
+    <string name="music_recognition_open_shazam">เปิด Shazam</string>
+    <string name="music_recognition_lyrics_preview">ตัวอย่างเนื้อเพลง</string>
 </resources>
