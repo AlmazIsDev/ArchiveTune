@@ -110,7 +110,9 @@ object YTPlayerUtils {
 
     class BadStreamPlayerResponseException(
         val videoId: String,
-    ) : IllegalStateException("YouTube playback stream clients returned no playable response")
+        val failedClients: Set<String> = emptySet(),
+        cause: Throwable? = null,
+    ) : IllegalStateException("YouTube playback stream clients returned no playable response", cause)
 
     private data class PlaybackGateFailure(
         val clientName: String,
@@ -128,6 +130,12 @@ object YTPlayerUtils {
      * - premium formats
      */
     private val MAIN_CLIENT: YouTubeClient = WEB_REMIX
+
+    private val ANONYMOUS_WEB_EMBEDDED_CLIENT: YouTubeClient =
+        WEB_EMBEDDED.copy(
+            supportsCookieAuthentication = false,
+            friendlyName = "Web Embedded Player (Anonymous)",
+        )
 
     /**
      * Clients used for fallback streams in case the streams of the main client do not work.
@@ -193,7 +201,15 @@ object YTPlayerUtils {
 
     suspend fun recoverFromBadStreamPlayerResponse(videoId: String) {
         BotGuardTokenGenerator.invalidateAll()
-        val authState = YouTube.currentPlaybackAuthState()
+        val authState =
+            YouTube
+                .currentPlaybackAuthState()
+                .copy(
+                    poToken = null,
+                    poTokenGvs = null,
+                    poTokenPlayer = null,
+                    webClientPoTokenEnabled = false,
+                ).normalized()
         val refreshedAuthState =
             ensureVisitorDataReady(
                 videoId = videoId,
@@ -499,7 +515,15 @@ object YTPlayerUtils {
 
         val orderedFallbackClients =
             if (authState.hasPlaybackLoginContext) {
-                STREAM_FALLBACK_CLIENTS.filter { it.supportsCookieAuthentication } +
+                STREAM_FALLBACK_CLIENTS
+                    .filter { it.supportsCookieAuthentication }
+                    .flatMap { client ->
+                        if (client == WEB_EMBEDDED) {
+                            listOf(client, ANONYMOUS_WEB_EMBEDDED_CLIENT)
+                        } else {
+                            listOf(client)
+                        }
+                    } +
                     STREAM_FALLBACK_CLIENTS.filterNot { it.supportsCookieAuthentication }
             } else {
                 STREAM_FALLBACK_CLIENTS.filterNot { it.supportsCookieAuthentication } +
@@ -806,6 +830,8 @@ object YTPlayerUtils {
         var streamClientUsed: YouTubeClient? = null
         var didRepairAuthAfterBotDetection = false
         var didAttemptGvsPoTokenRecovery = false
+        val failedPlayerClients = linkedSetOf<String>()
+        val playerRequestFailures = mutableListOf<Throwable>()
 
         var metadataClient =
             if (authState.hasPlaybackLoginContext && !hasWebGvsPoToken(authState)) {
@@ -889,6 +915,18 @@ object YTPlayerUtils {
                         setLogin = useCookieAuthentication,
                         authState = authState,
                     )
+                val fallbackFailure = fallbackResult.exceptionOrNull()
+                if (fallbackFailure != null) {
+                    if (fallbackFailure is CancellationException) throw fallbackFailure
+                    failedPlayerClients += describeClient(fallbackClient)
+                    playerRequestFailures += fallbackFailure
+                    Timber.tag(logTag).w(
+                        fallbackFailure,
+                        "Metadata fallback player request failed for %s via %s",
+                        videoId,
+                        describeClient(fallbackClient),
+                    )
+                }
                 val fallbackResponse = fallbackResult.getOrNull() ?: continue
                 if (fallbackResponse.playabilityStatus.status != "OK") continue
 
@@ -978,7 +1016,19 @@ object YTPlayerUtils {
                             signatureTimestamp = signatureTimestamp,
                             setLogin = requestUsesCookieAuthentication,
                             authState = authState,
-                        ).getPlaybackPlayerResponseOrNull(videoId, authState)
+                        ).also { result ->
+                            result.exceptionOrNull()?.let { failure ->
+                                if (failure is CancellationException) throw failure
+                                failedPlayerClients += describeClient(client)
+                                playerRequestFailures += failure
+                                Timber.tag(logTag).w(
+                                    failure,
+                                    "Stream player request failed for %s via %s",
+                                    videoId,
+                                    describeClient(client),
+                                )
+                            }
+                        }.getPlaybackPlayerResponseOrNull(videoId, authState)
                 }
 
             if (streamPlayerResponse == null) continue
@@ -1176,8 +1226,14 @@ object YTPlayerUtils {
                     clients = botDetectedClients.toSet(),
                 )
             }
-            Timber.tag(logTag).e("Bad stream player response - all clients failed")
-            throw BadStreamPlayerResponseException(videoId)
+            Timber.tag(logTag).e(
+                "Bad stream player response - all clients failed: $failedPlayerClients",
+            )
+            throw BadStreamPlayerResponseException(
+                videoId = videoId,
+                failedClients = failedPlayerClients,
+                cause = playerRequestFailures.firstOrNull(),
+            )
         }
 
         if (streamPlayerResponse.playabilityStatus.status != "OK") {
