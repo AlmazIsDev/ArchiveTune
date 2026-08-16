@@ -71,6 +71,8 @@ private val YOUTUBE_COOKIE_URLS =
 fun LoginScreen(
     navController: NavController,
     startUrl: String? = null,
+    onLoginComplete: (() -> Unit)? = null,
+    onNavigateBack: (() -> Unit)? = null,
     viewModel: LoginViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
@@ -82,7 +84,11 @@ fun LoginScreen(
     LaunchedEffect(screenState, loginSuccessMessage) {
         if (screenState is LoginScreenState.Success) {
             Toast.makeText(context, loginSuccessMessage, Toast.LENGTH_SHORT).show()
-            navController.navigateUp()
+            if (onLoginComplete != null) {
+                onLoginComplete()
+            } else {
+                navController.navigateUp()
+            }
         }
     }
 
@@ -152,8 +158,20 @@ fun LoginScreen(
         title = { Text(stringResource(R.string.login)) },
         navigationIcon = {
             IconButton(
-                onClick = navController::navigateUp,
-                onLongClick = navController::backToMain,
+                onClick = {
+                    if (onNavigateBack != null) {
+                        onNavigateBack()
+                    } else {
+                        navController.navigateUp()
+                    }
+                },
+                onLongClick = {
+                    if (onNavigateBack != null) {
+                        onNavigateBack()
+                    } else {
+                        navController.backToMain()
+                    }
+                },
             ) {
                 Icon(
                     painterResource(R.drawable.arrow_back),
@@ -163,8 +181,12 @@ fun LoginScreen(
         },
     )
 
-    BackHandler(enabled = webView?.canGoBack() == true) {
-        webView?.goBack()
+    BackHandler(enabled = onNavigateBack != null || webView?.canGoBack() == true) {
+        if (webView?.canGoBack() == true) {
+            webView?.goBack()
+        } else {
+            onNavigateBack?.invoke()
+        }
     }
 }
 
