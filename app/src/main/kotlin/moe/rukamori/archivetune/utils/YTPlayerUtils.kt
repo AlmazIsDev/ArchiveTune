@@ -134,6 +134,10 @@ object YTPlayerUtils {
      */
     private val STREAM_FALLBACK_CLIENTS: Array<YouTubeClient> =
         arrayOf(
+            ANDROID_VR_NO_AUTH,
+            ANDROID_VR_1_65_10,
+            ANDROID_VR_1_61_48,
+            ANDROID_VR_1_43_32,
             TVHTML5_DOWNGRADED,
             WEB_EMBEDDED,
             WEB_CREATOR,
@@ -143,10 +147,6 @@ object YTPlayerUtils {
             WEB_PRIMARY,
             TVHTML5,
             TVHTML5_SIMPLY,
-            ANDROID_VR_NO_AUTH,
-            ANDROID_VR_1_65_10,
-            ANDROID_VR_1_61_48,
-            ANDROID_VR_1_43_32,
             IOS,
             MOBILE,
             ANDROID_MUSIC,
