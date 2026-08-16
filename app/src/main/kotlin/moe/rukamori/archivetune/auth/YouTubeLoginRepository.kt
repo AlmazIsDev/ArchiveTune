@@ -186,8 +186,13 @@ class YouTubeLoginRepository
                     currentAuthState
                         .copy(
                             visitorData = normalizedVisitorData ?: currentAuthState.visitorData,
-                            poTokenGvs = normalizedGvsToken,
+                            poTokenGvs = null,
+                            poTokenGvsSession = normalizedGvsToken,
+                            poTokenGvsVideoId = null,
                             poTokenPlayer = null,
+                            poTokenPlayerVideoId = null,
+                            poTokenSubs = null,
+                            poTokenSubsVideoId = null,
                             webClientPoTokenEnabled = normalizedGvsToken != null,
                         ).normalized()
             }

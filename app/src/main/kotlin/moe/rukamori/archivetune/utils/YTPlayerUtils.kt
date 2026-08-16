@@ -207,7 +207,12 @@ object YTPlayerUtils {
                 .copy(
                     poToken = null,
                     poTokenGvs = null,
+                    poTokenGvsSession = null,
+                    poTokenGvsVideoId = null,
                     poTokenPlayer = null,
+                    poTokenPlayerVideoId = null,
+                    poTokenSubs = null,
+                    poTokenSubsVideoId = null,
                     webClientPoTokenEnabled = false,
                 ).normalized()
         val refreshedAuthState =
@@ -269,7 +274,12 @@ object YTPlayerUtils {
                     .copy(
                         poToken = null,
                         poTokenGvs = null,
+                        poTokenGvsSession = null,
+                        poTokenGvsVideoId = null,
                         poTokenPlayer = null,
+                        poTokenPlayerVideoId = null,
+                        poTokenSubs = null,
+                        poTokenSubsVideoId = null,
                     ).normalized()
         }
 
@@ -296,14 +306,19 @@ object YTPlayerUtils {
                             dataSyncId = refreshedDataSyncId,
                             poToken = null,
                             poTokenGvs = null,
+                            poTokenGvsSession = null,
+                            poTokenGvsVideoId = null,
                             poTokenPlayer = null,
+                            poTokenPlayerVideoId = null,
+                            poTokenSubs = null,
+                            poTokenSubsVideoId = null,
                         ).normalized()
             }
         }
 
         if (
             repairedAuthState.visitorData.isNullOrBlank() ||
-            !hasWebGvsPoToken(repairedAuthState)
+            !hasWebGvsPoToken(repairedAuthState, videoId)
         ) {
             repairedAuthState =
                 ensureVisitorDataReady(
@@ -314,7 +329,7 @@ object YTPlayerUtils {
                 )
         }
 
-        if (!hasWebGvsPoToken(repairedAuthState)) {
+        if (!hasWebGvsPoToken(repairedAuthState, videoId)) {
             repairedAuthState = mintWebPlaybackPoTokens(videoId, repairedAuthState)
         }
 
@@ -326,9 +341,12 @@ object YTPlayerUtils {
         return repairedAuthState
     }
 
-    private fun hasWebGvsPoToken(authState: PlaybackAuthState): Boolean =
+    private fun hasWebGvsPoToken(
+        authState: PlaybackAuthState,
+        videoId: String,
+    ): Boolean =
         authState.webClientPoTokenEnabled &&
-            !authState.resolveGvsPoToken(WEB_REMIX).isNullOrBlank()
+            !authState.resolveGvsPoToken(WEB_CREATOR, videoId).isNullOrBlank()
 
     private suspend fun mintWebPlaybackPoTokens(
         videoId: String,
@@ -336,14 +354,22 @@ object YTPlayerUtils {
     ): PlaybackAuthState {
         val sessionId = authState.sessionId ?: return authState
         val tokenResult = BotGuardTokenGenerator.mintToken(videoId, sessionId) ?: return authState
-        return authState.withGeneratedPoTokens(tokenResult)
+        return authState.withGeneratedPoTokens(videoId, tokenResult)
     }
 
-    private fun PlaybackAuthState.withGeneratedPoTokens(tokenResult: PoTokenResult): PlaybackAuthState {
+    private fun PlaybackAuthState.withGeneratedPoTokens(
+        videoId: String,
+        tokenResult: PoTokenResult,
+    ): PlaybackAuthState {
         val updatedAuthState =
             copy(
-                poTokenGvs = tokenResult.sessionToken,
+                poTokenGvs = tokenResult.playerToken,
+                poTokenGvsSession = tokenResult.sessionToken,
+                poTokenGvsVideoId = videoId,
                 poTokenPlayer = tokenResult.playerToken,
+                poTokenPlayerVideoId = videoId,
+                poTokenSubs = tokenResult.playerToken,
+                poTokenSubsVideoId = videoId,
                 webClientPoTokenEnabled = true,
             ).normalized()
         val currentAuthState = YouTube.currentPlaybackAuthState()
@@ -351,8 +377,13 @@ object YTPlayerUtils {
             YouTube.authState =
                 currentAuthState
                     .copy(
-                        poTokenGvs = tokenResult.sessionToken,
+                        poTokenGvs = tokenResult.playerToken,
+                        poTokenGvsSession = tokenResult.sessionToken,
+                        poTokenGvsVideoId = videoId,
                         poTokenPlayer = tokenResult.playerToken,
+                        poTokenPlayerVideoId = videoId,
+                        poTokenSubs = tokenResult.playerToken,
+                        poTokenSubsVideoId = videoId,
                         webClientPoTokenEnabled = true,
                     ).normalized()
         }
@@ -369,7 +400,12 @@ object YTPlayerUtils {
             dataSyncId = null,
             poToken = null,
             poTokenGvs = null,
+            poTokenGvsSession = null,
+            poTokenGvsVideoId = null,
             poTokenPlayer = null,
+            poTokenPlayerVideoId = null,
+            poTokenSubs = null,
+            poTokenSubsVideoId = null,
         ).normalized()
 
     internal fun shouldSkipCipheredWebPlaybackCandidate(
@@ -834,7 +870,7 @@ object YTPlayerUtils {
         val playerRequestFailures = mutableListOf<Throwable>()
 
         var metadataClient =
-            if (authState.hasPlaybackLoginContext && !hasWebGvsPoToken(authState)) {
+            if (authState.hasPlaybackLoginContext && !hasWebGvsPoToken(authState, videoId)) {
                 WEB_PRIMARY
             } else {
                 MAIN_CLIENT
@@ -842,7 +878,7 @@ object YTPlayerUtils {
 
         Timber.tag(logTag).i("Fetching metadata response using client: ${metadataClient.clientName}")
 
-        var metadataPoToken = authState.resolvePlayerPoToken(metadataClient)
+        var metadataPoToken = authState.resolvePlayerPoToken(metadataClient, videoId = videoId)
 
         var metadataResult =
             YouTube.player(
@@ -876,7 +912,7 @@ object YTPlayerUtils {
                 try {
                     authState = mintWebPlaybackPoTokens(videoId, authState)
                     sessionId = authState.sessionId
-                    metadataPoToken = authState.resolvePlayerPoToken(metadataClient)
+                    metadataPoToken = authState.resolvePlayerPoToken(metadataClient, videoId = videoId)
                 } catch (cancellation: CancellationException) {
                     throw cancellation
                 } catch (e: Exception) {
@@ -984,7 +1020,7 @@ object YTPlayerUtils {
                     client != WEB_PRIMARY &&
                     authState.sessionId != null &&
                     PlaybackAuthState.supportsGvsPoToken(client) &&
-                    authState.resolveGvsPoToken(client).isNullOrBlank()
+                    authState.resolveGvsPoToken(client, videoId).isNullOrBlank()
             ) {
                 didAttemptGvsPoTokenRecovery = true
                 try {
@@ -1048,7 +1084,7 @@ object YTPlayerUtils {
                         )
                     val shouldUseWebRemix =
                         repairedAuthState.hasPlaybackLoginContext &&
-                            hasWebGvsPoToken(repairedAuthState) &&
+                            hasWebGvsPoToken(repairedAuthState, videoId) &&
                             client != WEB_REMIX
 
                     if (repairedAuthState.fingerprint != authState.fingerprint || shouldUseWebRemix) {
@@ -1148,7 +1184,7 @@ object YTPlayerUtils {
 
             for (candidate in candidates) {
                 if (canUseLoggedInPlayback && expectedDurationMs != null && isLikelyPreview(candidate, expectedDurationMs)) continue
-                if (shouldSkipCipheredWebCandidate(client, candidate, authState)) continue
+                if (shouldSkipCipheredWebCandidate(client, candidate, videoId, authState)) continue
                 val cacheKey = buildStreamCacheKey(videoId, candidate.itag, client, authState.fingerprint)
                 val cached = streamUrlCache[cacheKey]
                 val candidateResult =
@@ -1335,7 +1371,7 @@ object YTPlayerUtils {
                 playlistId = playlistId,
                 client = MAIN_CLIENT,
                 signatureTimestamp = signatureTimestamp,
-                poToken = resolvedAuthState.resolvePlayerPoToken(MAIN_CLIENT),
+                poToken = resolvedAuthState.resolvePlayerPoToken(MAIN_CLIENT, videoId = videoId),
                 setLogin = true,
                 authState = resolvedAuthState,
             ).onSuccess { Timber.tag(logTag).d("Successfully fetched metadata") }
@@ -1451,11 +1487,12 @@ object YTPlayerUtils {
     private fun shouldSkipCipheredWebCandidate(
         client: YouTubeClient,
         format: PlayerResponse.StreamingData.Format,
+        videoId: String,
         authState: PlaybackAuthState,
     ): Boolean {
         val isWebClient = PlaybackAuthState.supportsGvsPoToken(client)
         val isCiphered = isCipheredFormat(format)
-        val hasGvsPoToken = !authState.resolveGvsPoToken(client).isNullOrBlank()
+        val hasGvsPoToken = !authState.resolveGvsPoToken(client, videoId).isNullOrBlank()
         if (
             !shouldSkipCipheredWebPlaybackCandidate(
                 webClientPoTokenEnabled = authState.webClientPoTokenEnabled,

@@ -219,6 +219,7 @@ import moe.rukamori.archivetune.innertube.PlaybackAuthState
 import moe.rukamori.archivetune.innertube.YouTube
 import moe.rukamori.archivetune.innertube.models.SongItem
 import moe.rukamori.archivetune.innertube.models.WatchEndpoint
+import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.WEB_REMIX
 import moe.rukamori.archivetune.innertube.models.response.PlayerResponse
 import moe.rukamori.archivetune.lastfm.LastFM
 import moe.rukamori.archivetune.lyrics.LyricsHelper
@@ -7793,9 +7794,9 @@ class MusicService :
                 runBlocking(Dispatchers.IO) {
                     streamingExtractionManager.extractAudio(
                         videoUrl = mediaId.toYouTubeWatchUrl(),
-                        userPoToken = authState.resolveExtractorPoToken(),
+                        userPoToken = authState.resolveExtractorPoToken(mediaId),
                         cookies = authState.resolveExtractorCookies(),
-                        userGvsToken = authState.resolveExtractorGvsToken(),
+                        userGvsToken = authState.resolveExtractorGvsToken(mediaId),
                     )
                 }
             }.getOrElse { throwable ->
@@ -7849,11 +7850,13 @@ class MusicService :
         return dataSpec.withUri(streamUrl.toUri())
     }
 
-    private fun PlaybackAuthState.resolveExtractorPoToken(): String? = poTokenPlayer.normalizeExtractorRequestValue()
+    private fun PlaybackAuthState.resolveExtractorPoToken(videoId: String): String? =
+        poTokenPlayer
+            ?.takeIf { poTokenPlayerVideoId == null || poTokenPlayerVideoId == videoId }
+            .normalizeExtractorRequestValue()
 
-    private fun PlaybackAuthState.resolveExtractorGvsToken(): String? =
-        resolveGvsPoToken().normalizeExtractorRequestValue()
-            ?: poTokenGvs.normalizeExtractorRequestValue()
+    private fun PlaybackAuthState.resolveExtractorGvsToken(videoId: String): String? =
+        resolveGvsPoToken(WEB_REMIX, videoId).normalizeExtractorRequestValue()
             ?: poToken.normalizeExtractorRequestValue()
 
     private fun PlaybackAuthState.resolveExtractorCookies(): String? = cookie.normalizeExtractorRequestValue()
