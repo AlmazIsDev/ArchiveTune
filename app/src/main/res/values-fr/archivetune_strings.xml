@@ -729,4 +729,7 @@
     <string name="arrange_playlist_tags_desc">Choisissez l\'ordre d\'affichage des filtres par balise dans votre bibliothèque</string>
     <string name="arrange_library_chips">Trier les jetons de la bibliothèque</string>
     <string name="arrange_library_chips_desc">Choisissez l\'ordre d\'affichage des onglets dans votre bibliothèque</string>
+    <string name="aod_customize_mode_enabled">Activer le mode AOD</string>
+    <string name="aod_customize_mode_enabled_desc">Autoriser ArchiveTune à afficher l\'écran du lecteur en mode permanent</string>
+    <string name="ai_provider_openrouter">OpenRouter</string>
 </resources>
