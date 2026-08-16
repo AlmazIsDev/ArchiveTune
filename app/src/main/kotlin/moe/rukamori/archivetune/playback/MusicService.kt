@@ -41,6 +41,7 @@ import android.os.Binder
 import android.os.Build
 import android.os.Handler
 import android.os.PowerManager
+import android.util.LruCache
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.content.getSystemService
@@ -218,6 +219,7 @@ import moe.rukamori.archivetune.innertube.PlaybackAuthState
 import moe.rukamori.archivetune.innertube.YouTube
 import moe.rukamori.archivetune.innertube.models.SongItem
 import moe.rukamori.archivetune.innertube.models.WatchEndpoint
+import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.WEB_REMIX
 import moe.rukamori.archivetune.innertube.models.response.PlayerResponse
 import moe.rukamori.archivetune.lastfm.LastFM
 import moe.rukamori.archivetune.lyrics.LyricsHelper
@@ -370,6 +372,7 @@ class MusicService :
     private val extractorPlaybackUrlCache = ConcurrentHashMap<String, AuthScopedCacheValue>()
     private val remotePlaybackTrackingUrlCache = ConcurrentHashMap<String, String>()
     private val contentLengthCache = ConcurrentHashMap<String, Long>()
+    private val castMimeTypeCache = LruCache<String, String>(128)
     private val extractorTokenRepository by lazy {
         InMemoryBearerTokenRepository(moe.rukamori.archivetune.BuildConfig.EXTRACTOR_BEARER)
     }
@@ -1100,7 +1103,19 @@ class MusicService :
                 .createPlayer(
                     context = this,
                     localPlayer = localPlayer,
-                    mediaItemResolver = CastMediaItemResolver(::resolveMediaItemForCast),
+                    mediaItemResolver =
+                        object : CastMediaItemResolver {
+                            override fun resolveForCast(mediaItem: MediaItem): MediaItem =
+                                resolveMediaItemForCast(mediaItem)
+
+                            override fun mimeTypeForCast(mediaItem: MediaItem): String? =
+                                mediaItem.localConfiguration?.mimeType
+                                    ?.toCastMimeType()
+                                    ?: mediaItem.localConfiguration
+                                        ?.customCacheKey
+                                        ?.let(castMimeTypeCache::get)
+                                    ?: castMimeTypeCache.get(mediaItem.mediaId)
+                        },
                 ).apply {
                     addListener(this@MusicService)
                     sleepTimer = SleepTimer(scope, this, this@MusicService)
@@ -2862,10 +2877,10 @@ class MusicService :
 
         var handoffCompleted = false
         try {
-            localPlayer.pauseAtEndOfMediaItems = false
-            player.volume = 0f
             crossfadeHandoffInProgress = true
             crossfadeHandoffProgress = 0f
+            localPlayer.pauseAtEndOfMediaItems = false
+            player.volume = 0f
             player.seekTo(targetIndex, incomingPosition)
             player.playWhenReady = shouldContinuePlayback
             if (shouldContinuePlayback) {
@@ -3555,7 +3570,10 @@ class MusicService :
 
         var throwable: Throwable? = error.cause
         while (throwable != null) {
-            if (throwable.message?.contains("Skipping atom with length", ignoreCase = true) == true) {
+            if (
+                throwable.message?.contains("Skipping atom with length", ignoreCase = true) == true ||
+                    throwable.isMedia3ExtractorBoundsFailure()
+            ) {
                 return true
             }
             throwable = throwable.cause
@@ -3595,6 +3613,10 @@ class MusicService :
                     }
                 }
 
+                isContentCached && throwable.isMedia3ExtractorBoundsFailure() -> {
+                    return true
+                }
+
                 isContainerParseError && isContentCached && throwable is ParserException -> {
                     return true
                 }
@@ -3612,6 +3634,10 @@ class MusicService :
         }
         return false
     }
+
+    private fun Throwable.isMedia3ExtractorBoundsFailure(): Boolean =
+        this is ArrayIndexOutOfBoundsException &&
+            stackTrace.any { it.className.startsWith("androidx.media3.extractor") }
 
     private fun retryPlaybackAfterStreamFailure(
         mediaId: String,
@@ -6773,7 +6799,8 @@ class MusicService :
                 val isEndOfOutgoingItemPause =
                     !playWhenReady &&
                         reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM &&
-                        localPlayer.pauseAtEndOfMediaItems
+                        crossfadePlaybackRequested &&
+                        (localPlayer.pauseAtEndOfMediaItems || crossfadeHandoffInProgress)
                 if (!isEndOfOutgoingItemPause) {
                     crossfadePlaybackRequested = playWhenReady
                     secondaryPlayer.playWhenReady = crossfadePlaybackRequested
@@ -6809,7 +6836,12 @@ class MusicService :
         super.onIsPlayingChanged(isPlaying)
         secondaryCrossfadePlayer?.let { secondaryPlayer ->
             if (isCrossfading && !crossfadeHandoffInProgress) {
-                if (isPlaying) {
+                val isEndOfOutgoingItemPause =
+                    !isPlaying &&
+                        !player.playWhenReady &&
+                        crossfadePlaybackRequested &&
+                        localPlayer.pauseAtEndOfMediaItems
+                if (isPlaying || isEndOfOutgoingItemPause) {
                     secondaryPlayer.play()
                 } else {
                     secondaryPlayer.pause()
@@ -7437,6 +7469,24 @@ class MusicService :
         }
     }
 
+    private fun String?.toCastMimeType(): String? {
+        val normalized = this?.trim()?.takeIf(String::isNotEmpty) ?: return null
+        val baseType = normalized.substringBefore(';').trim()
+        return normalized.takeIf {
+            baseType.contains('/') && !baseType.endsWith("/*")
+        }
+    }
+
+    private fun FormatEntity.toCastMimeType(): String? {
+        val normalizedMimeType = mimeType.toCastMimeType() ?: return null
+        val normalizedCodecs = codecs.trim()
+        return if (normalizedCodecs.isEmpty() || normalizedMimeType.contains("codecs=", ignoreCase = true)) {
+            normalizedMimeType
+        } else {
+            "$normalizedMimeType; codecs=\"$normalizedCodecs\""
+        }
+    }
+
     private fun resolveMediaItemForCast(mediaItem: MediaItem): MediaItem {
         val localConfiguration = mediaItem.localConfiguration ?: return mediaItem
         val uri = localConfiguration.uri
@@ -7454,12 +7504,8 @@ class MusicService :
                 allowCacheShortCircuit = false,
             )
         val resolvedMimeType =
-            localConfiguration.mimeType
-                ?.substringBefore(";")
-                ?.takeIf { it.isNotBlank() && !it.endsWith("/*") }
-                ?: runBlocking(Dispatchers.IO) {
-                    database.format(mediaId).first()?.mimeType?.substringBefore(";")
-                }
+            localConfiguration.mimeType.toCastMimeType()
+                ?: castMimeTypeCache.get(mediaId)
         return mediaItem
             .buildUpon()
             .setUri(resolvedDataSpec.uri)
@@ -7480,6 +7526,7 @@ class MusicService :
                 database.format(mediaId).first()
             }
         storedFormat?.let { format ->
+            format.toCastMimeType()?.let { castMimeTypeCache.put(mediaId, it) }
             audioNormalizationFactorCache[mediaId] = calculateAudioNormalizationFactor(format, normalizeAudio = true)
         }
         val knownContentLength =
@@ -7650,6 +7697,7 @@ class MusicService :
             ?.remotePlaybackTrackingUrl()
             ?.let { remotePlaybackTrackingUrlCache[mediaId] = it }
         val format = nonNullPlayback.format
+        format.mimeType.toCastMimeType()?.let { castMimeTypeCache.put(mediaId, it) }
         val loudnessDb = nonNullPlayback.audioConfig?.loudnessDb
         val perceptualLoudnessDb = nonNullPlayback.audioConfig?.perceptualLoudnessDb
         val resolvedContentLength = format.contentLength ?: 0L
@@ -7746,9 +7794,9 @@ class MusicService :
                 runBlocking(Dispatchers.IO) {
                     streamingExtractionManager.extractAudio(
                         videoUrl = mediaId.toYouTubeWatchUrl(),
-                        userPoToken = authState.resolveExtractorPoToken(),
+                        userPoToken = authState.resolveExtractorPoToken(mediaId),
                         cookies = authState.resolveExtractorCookies(),
-                        userGvsToken = authState.resolveExtractorGvsToken(),
+                        userGvsToken = authState.resolveExtractorGvsToken(mediaId),
                     )
                 }
             }.getOrElse { throwable ->
@@ -7802,11 +7850,13 @@ class MusicService :
         return dataSpec.withUri(streamUrl.toUri())
     }
 
-    private fun PlaybackAuthState.resolveExtractorPoToken(): String? = poTokenPlayer.normalizeExtractorRequestValue()
+    private fun PlaybackAuthState.resolveExtractorPoToken(videoId: String): String? =
+        poTokenPlayer
+            ?.takeIf { poTokenPlayerVideoId == null || poTokenPlayerVideoId == videoId }
+            .normalizeExtractorRequestValue()
 
-    private fun PlaybackAuthState.resolveExtractorGvsToken(): String? =
-        resolveGvsPoToken().normalizeExtractorRequestValue()
-            ?: poTokenGvs.normalizeExtractorRequestValue()
+    private fun PlaybackAuthState.resolveExtractorGvsToken(videoId: String): String? =
+        resolveGvsPoToken(WEB_REMIX, videoId).normalizeExtractorRequestValue()
             ?: poToken.normalizeExtractorRequestValue()
 
     private fun PlaybackAuthState.resolveExtractorCookies(): String? = cookie.normalizeExtractorRequestValue()

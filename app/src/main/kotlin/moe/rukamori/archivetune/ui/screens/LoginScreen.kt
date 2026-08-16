@@ -56,7 +56,7 @@ private const val LOGIN_CONTEXT_RETRY_DELAY_MS = 1_000L
 private const val LOGIN_CONTEXT_EXTRACTION_ATTEMPTS = 10
 
 private const val LOGIN_CONTEXT_SCRIPT =
-    "(function(){try{var c=window.ytcfg;var y=window.yt&&window.yt.config_;var s=document.querySelectorAll('script');var v=c&&c.get&&c.get('VISITOR_DATA')||y&&y.VISITOR_DATA;var d=c&&c.get&&c.get('DATASYNC_ID')||y&&y.DATASYNC_ID;var t=c&&c.get&&c.get('PO_TOKEN');for(var i=0;i<s.length&&(!v||!d||!t);i++){var x=s[i].textContent;if(!v){var vm=x.match(/\"VISITOR_DATA\":\"([^\"]+)\"/);if(vm)v=vm[1]}if(!d){var dm=x.match(/[\"'](?:DATASYNC_ID|dataSyncId)[\"']\\s*:\\s*[\"']([^\"']+)[\"']/);if(dm)d=dm[1]}if(!t){var tm=x.match(/\"PO_TOKEN\":\"([^\"]+)\"/);if(tm)t=tm[1]}}if(v)Android.onRetrieveVisitorData(v);if(d)Android.onRetrieveDataSyncId(d);if(t)Android.onRetrievePoToken(t)}catch(e){}})();"
+    "(function(){try{var c=window.ytcfg;var y=window.yt&&window.yt.config_;var s=document.querySelectorAll('script');var v=c&&c.get&&c.get('VISITOR_DATA')||y&&y.VISITOR_DATA;var d=c&&c.get&&c.get('DATASYNC_ID')||y&&y.DATASYNC_ID;var g=c&&c.get&&c.get('GVS_PO_TOKEN')||c&&c.get&&c.get('PO_TOKEN_GVS')||y&&y.GVS_PO_TOKEN||y&&y.PO_TOKEN_GVS;for(var i=0;i<s.length&&(!v||!d||!g);i++){var x=s[i].textContent;if(!v){var vm=x.match(/[\"']VISITOR_DATA[\"']\\s*:\\s*[\"']([^\"']+)[\"']/);if(vm)v=vm[1]}if(!d){var dm=x.match(/[\"'](?:DATASYNC_ID|dataSyncId)[\"']\\s*:\\s*[\"']([^\"']+)[\"']/);if(dm)d=dm[1]}if(!g){var gm=x.match(/[\"'](?:GVS_PO_TOKEN|PO_TOKEN_GVS)[\"']\\s*:\\s*[\"']([^\"']+)[\"']/);if(gm)g=gm[1]}}if(v)Android.onRetrieveVisitorData(v);if(d)Android.onRetrieveDataSyncId(d);if(g)Android.onRetrieveGvsPoToken(g)}catch(e){}})();"
 
 private val YOUTUBE_COOKIE_URLS =
     listOf(
@@ -123,9 +123,9 @@ fun LoginScreen(
                         }
 
                         @JavascriptInterface
-                        fun onRetrievePoToken(newPoToken: String?) {
+                        fun onRetrieveGvsPoToken(newGvsPoToken: String?) {
                             loginWebView.post {
-                                viewModel.onPoTokenExtracted(newPoToken)
+                                viewModel.onGvsPoTokenExtracted(newGvsPoToken)
                             }
                         }
                     },

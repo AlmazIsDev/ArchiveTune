@@ -177,8 +177,6 @@ import moe.rukamori.archivetune.constants.PlayerCustomContrastKey
 import moe.rukamori.archivetune.constants.PlayerCustomImageUriKey
 import moe.rukamori.archivetune.constants.PlayerDesignStyle
 import moe.rukamori.archivetune.constants.PlayerDesignStyleKey
-import moe.rukamori.archivetune.constants.PoTokenGvsKey
-import moe.rukamori.archivetune.constants.PoTokenPlayerKey
 import moe.rukamori.archivetune.constants.QueuePeekHeight
 import moe.rukamori.archivetune.constants.ShowPlayerVolumeBarKey
 import moe.rukamori.archivetune.constants.SliderStyle
@@ -320,15 +318,9 @@ fun BottomSheetPlayer(
     val playerConnection = LocalPlayerConnection.current ?: return
     val playbackError by playerConnection.error.collectAsStateWithLifecycle()
     val (innerTubeCookie) = rememberPreference(InnerTubeCookieKey, defaultValue = "")
-    val (poTokenGvs) = rememberPreference(PoTokenGvsKey, defaultValue = "")
-    val (poTokenPlayer) = rememberPreference(PoTokenPlayerKey, defaultValue = "")
     val isYouTubeLoggedIn =
         remember(innerTubeCookie) {
             hasYouTubeLoginCookie(innerTubeCookie)
-        }
-    val isPoTokenLoggedIn =
-        remember(poTokenGvs, poTokenPlayer) {
-            poTokenGvs.isNotBlank() && poTokenPlayer.isNotBlank()
         }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -351,15 +343,6 @@ fun BottomSheetPlayer(
                 }
             }
         }
-    val navigateToPoTokenLogin =
-        remember(navController) {
-            {
-                navController.navigate("settings/account") {
-                    launchSingleTop = true
-                }
-            }
-        }
-
     val playerDesignStyle by rememberEnumPreference(
         key = PlayerDesignStyleKey,
         defaultValue = PlayerDesignStyle.V4,
@@ -1961,11 +1944,9 @@ fun BottomSheetPlayer(
         PlaybackErrorDialog(
             error = activePlaybackError,
             showLoginAction = !isYouTubeLoggedIn,
-            showPoTokenLoginAction = !isPoTokenLoggedIn,
             onRetry = retryPlayback,
             onClose = dismissPlaybackError,
             onLogin = loginClick,
-            onPoTokenLogin = navigateToPoTokenLogin,
         )
     }
 }
