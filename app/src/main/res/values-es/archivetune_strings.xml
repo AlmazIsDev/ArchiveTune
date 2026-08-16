@@ -729,4 +729,7 @@
     <string name="arrange_playlist_tags_desc">Ordenar los filtros de etiquetas de la biblioteca</string>
     <string name="arrange_library_chips">Ordenar etiquetas de la biblioteca</string>
     <string name="arrange_library_chips_desc">Ordenar pestañas de la biblioteca</string>
+    <string name="aod_customize_mode_enabled">Activar el modo AOD</string>
+    <string name="aod_customize_mode_enabled_desc">Activar pantalla del reproductor siempre encendida en ArchiveTune</string>
+    <string name="ai_provider_openrouter">OpenRouter</string>
 </resources>
