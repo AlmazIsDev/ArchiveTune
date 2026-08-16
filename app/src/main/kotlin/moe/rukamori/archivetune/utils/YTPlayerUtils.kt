@@ -137,6 +137,12 @@ object YTPlayerUtils {
             friendlyName = "Web Embedded Player (Anonymous)",
         )
 
+    private val ANONYMOUS_MWEB_CLIENT: YouTubeClient =
+        MWEB.copy(
+            supportsCookieAuthentication = false,
+            friendlyName = "Mobile Web (Anonymous)",
+        )
+
     /**
      * Clients used for fallback streams in case the streams of the main client do not work.
      */
@@ -500,18 +506,11 @@ object YTPlayerUtils {
     ): YouTubeClient =
         when (preferredStreamClient) {
             PlayerStreamClient.ANDROID_VR -> {
-                when {
-                    !authState.hasPlaybackLoginContext -> ANDROID_VR_NO_AUTH
-                    else -> TVHTML5_DOWNGRADED
-                }
+                ANDROID_VR_NO_AUTH
             }
 
             PlayerStreamClient.WEB_REMIX -> {
-                if (authState.hasPlaybackLoginContext) {
-                    TVHTML5_DOWNGRADED
-                } else {
-                    WEB_REMIX
-                }
+                WEB_REMIX
             }
 
             PlayerStreamClient.ARCHIVETUNE_EXTRACTOR -> {
@@ -550,20 +549,17 @@ object YTPlayerUtils {
             }
 
         val orderedFallbackClients =
-            if (authState.hasPlaybackLoginContext) {
-                STREAM_FALLBACK_CLIENTS
-                    .filter { it.supportsCookieAuthentication }
-                    .flatMap { client ->
-                        if (client == WEB_EMBEDDED) {
-                            listOf(client, ANONYMOUS_WEB_EMBEDDED_CLIENT)
-                        } else {
-                            listOf(client)
+            buildList {
+                STREAM_FALLBACK_CLIENTS.forEach { client ->
+                    add(client)
+                    if (authState.hasPlaybackLoginContext) {
+                        when (client) {
+                            WEB_EMBEDDED -> add(ANONYMOUS_WEB_EMBEDDED_CLIENT)
+                            MWEB -> add(ANONYMOUS_MWEB_CLIENT)
+                            else -> Unit
                         }
-                    } +
-                    STREAM_FALLBACK_CLIENTS.filterNot { it.supportsCookieAuthentication }
-            } else {
-                STREAM_FALLBACK_CLIENTS.filterNot { it.supportsCookieAuthentication } +
-                    STREAM_FALLBACK_CLIENTS.filter { it.supportsCookieAuthentication }
+                    }
+                }
             }
 
         return buildList {
