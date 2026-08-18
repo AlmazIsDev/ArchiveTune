@@ -396,10 +396,7 @@ class HomeViewModel
                     .flatMapLatest { mode ->
                         when (mode) {
                             QuickPicks.QUICK_PICKS -> {
-                                database
-                                    .quickPicks()
-                                    .distinctUntilSongIdsChanged()
-                                    .map { songs -> quickPicksWithFallback(songs) }
+                                flowOf<List<Song>?>(null)
                             }
 
                             QuickPicks.LAST_LISTEN -> {
@@ -424,7 +421,7 @@ class HomeViewModel
             val picks =
                 when (quickPicksMode.first()) {
                     QuickPicks.QUICK_PICKS -> {
-                        quickPicksWithFallback(database.quickPicks().first())
+                        null
                     }
 
                     QuickPicks.LAST_LISTEN -> {

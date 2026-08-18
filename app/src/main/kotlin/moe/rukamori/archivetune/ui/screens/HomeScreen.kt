@@ -365,7 +365,10 @@ private fun HomeContent(
                                 modifier = Modifier.animateItem(),
                             )
                         }
-                    } else if (uiState.quickPicks.isNotEmpty()) {
+                    } else if (
+                        uiState.quickPicksMode == QuickPicks.LAST_LISTEN &&
+                            uiState.quickPicks.isNotEmpty()
+                    ) {
                         item(
                             key = "home_quick_picks_header",
                             contentType = "section_header",
