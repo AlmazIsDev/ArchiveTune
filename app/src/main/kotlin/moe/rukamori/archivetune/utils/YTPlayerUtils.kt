@@ -1080,7 +1080,8 @@ object YTPlayerUtils {
                     val shouldUseWebRemix =
                         repairedAuthState.hasPlaybackLoginContext &&
                             hasWebGvsPoToken(repairedAuthState, videoId) &&
-                            client != WEB_REMIX
+                            client != WEB_REMIX &&
+                            WEB_REMIX in streamClients
 
                     if (repairedAuthState.fingerprint != authState.fingerprint || shouldUseWebRemix) {
                         authState = repairedAuthState
