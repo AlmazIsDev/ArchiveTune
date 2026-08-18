@@ -546,7 +546,9 @@ class HomeViewModel
                                             },
                                     )
                                 val (pageWithoutQuickPicks, quickPicksSection) = filteredPage.extractQuickPicks()
-                                remoteQuickPicks.value = quickPicksSection
+                                quickPicksSection?.takeIf { it.items.isNotEmpty() }?.let {
+                                    remoteQuickPicks.value = it
+                                }
                                 homePage.value = pageWithoutQuickPicks
                             }.onFailure {
                                 reportException(it)
