@@ -3650,8 +3650,9 @@ class MusicService :
 
         val failedUrl = responseException.dataSpec.uri.toString()
         val requestProfile = StreamClientUtils.resolveRequestProfile(failedUrl)
-        val authFingerprint = YouTube.currentPlaybackAuthState().fingerprint
-        val extractorAuthFingerprint = ArchiveTuneExtractorCacheFingerprintPrefix + authFingerprint
+        val authState = YouTube.currentPlaybackAuthState()
+        val authFingerprint = authState.streamCacheFingerprint
+        val extractorAuthFingerprint = ArchiveTuneExtractorCacheFingerprintPrefix + authState.fingerprint
         val cachedFailedUrl = playbackUrlCache[mediaId]?.takeIf { it.url == failedUrl }
         val cachedExtractorFailedUrl = extractorPlaybackUrlCache[mediaId]?.takeIf { it.url == failedUrl }
         val failedExpiredUrl =
@@ -7580,7 +7581,7 @@ class MusicService :
             )
         }
 
-        val authFingerprint = YouTube.currentPlaybackAuthState().fingerprint
+        val authFingerprint = YouTube.currentPlaybackAuthState().streamCacheFingerprint
         playbackUrlCache[mediaId]
             ?.takeUnless { lowDataModeActive }
             ?.takeIf {

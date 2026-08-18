@@ -134,7 +134,7 @@ class DownloadUtil
                 val lowDataModeActive = context.isLowDataModeActive()
                 val requestedAudioQuality = resolveDownloadAudioQuality(lowDataModeActive)
                 val streamCacheKey = buildSongUrlCacheKey(mediaId, requestedAudioQuality)
-                val authFingerprint = YouTube.currentPlaybackAuthState().fingerprint
+                val authFingerprint = YouTube.currentPlaybackAuthState().streamCacheFingerprint
                 songUrlCache[streamCacheKey]
                     ?.takeIf {
                         it.isValidFor(
