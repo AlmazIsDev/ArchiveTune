@@ -67,6 +67,7 @@ import moe.rukamori.archivetune.utils.parseSpeedDialPins
 import moe.rukamori.archivetune.utils.reportException
 import moe.rukamori.archivetune.utils.toPlaybackAuthState
 import timber.log.Timber
+import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 
 sealed interface AccountChannelsState {
@@ -212,6 +213,7 @@ class HomeViewModel
         private val selectedChip = MutableStateFlow<HomePage.Chip?>(null)
         private val previousHomePage = MutableStateFlow<HomePage?>(null)
         private val previousRemoteQuickPicks = MutableStateFlow<HomePage.Section?>(null)
+        private val accountRefreshGeneration = AtomicLong(0L)
 
         private val _allLocalItems = MutableStateFlow<List<LocalItem>>(emptyList())
         val allLocalItems: StateFlow<List<LocalItem>> = _allLocalItems.asStateFlow()
@@ -668,11 +670,17 @@ class HomeViewModel
         }
 
         private fun clearAccountData() {
+            accountRefreshGeneration.incrementAndGet()
             _accountName.value = ""
             _accountImageUrl.value = null
             accountPlaylists.value = null
             _accountChannelsState.value = AccountChannelsState.Empty
         }
+
+        private fun beginAccountRefresh(): Long = accountRefreshGeneration.incrementAndGet()
+
+        private fun isCurrentAccountRefresh(refreshGeneration: Long): Boolean =
+            accountRefreshGeneration.get() == refreshGeneration
 
         private fun prepareYouTubeAccount(cookie: String): Boolean =
             try {
@@ -683,7 +691,8 @@ class HomeViewModel
                 false
             }
 
-        private suspend fun refreshAccountIdentity() {
+        private suspend fun refreshAccountIdentity(refreshGeneration: Long) {
+            if (!isCurrentAccountRefresh(refreshGeneration)) return
             _accountName.value = ""
             _accountImageUrl.value = null
             _accountChannelsState.value = AccountChannelsState.Loading
@@ -692,6 +701,7 @@ class HomeViewModel
                 YouTube
                     .accountInfo()
                     .onSuccess { info ->
+                        if (!isCurrentAccountRefresh(refreshGeneration)) return@onSuccess
                         _accountName.value = info.name
                         _accountImageUrl.value = info.thumbnailUrl
                     }.onFailure { error ->
@@ -701,6 +711,7 @@ class HomeViewModel
                 YouTube
                     .accountChannels()
                     .onSuccess { channels ->
+                        if (!isCurrentAccountRefresh(refreshGeneration)) return@onSuccess
                         _accountChannelsState.value = channels
                             .map { it.toUiModel() }
                             .takeIf { it.size > 1 }
@@ -709,15 +720,21 @@ class HomeViewModel
                     }.onFailure { error ->
                         Timber.w(error, "Failed to fetch account channels")
                         reportException(error)
-                        _accountChannelsState.value = AccountChannelsState.Error(error.message.orEmpty())
+                        if (isCurrentAccountRefresh(refreshGeneration)) {
+                            _accountChannelsState.value = AccountChannelsState.Error(error.message.orEmpty())
+                        }
                     }
             } catch (e: CancellationException) {
-                _accountChannelsState.value = AccountChannelsState.Empty
+                if (isCurrentAccountRefresh(refreshGeneration)) {
+                    _accountChannelsState.value = AccountChannelsState.Empty
+                }
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, "Exception fetching account info")
                 reportException(e)
-                _accountChannelsState.value = AccountChannelsState.Error(e.message.orEmpty())
+                if (isCurrentAccountRefresh(refreshGeneration)) {
+                    _accountChannelsState.value = AccountChannelsState.Error(e.message.orEmpty())
+                }
             }
         }
 
@@ -731,12 +748,13 @@ class HomeViewModel
                 isSelected = isSelected,
             )
 
-        private suspend fun refreshAccountPlaylistsInternal() {
+        private suspend fun refreshAccountPlaylistsInternal(refreshGeneration: Long) {
             try {
                 YouTube
                     .library("FEmusic_liked_playlists")
                     .completed()
                     .onSuccess {
+                        if (!isCurrentAccountRefresh(refreshGeneration)) return@onSuccess
                         val lists =
                             it.items.filterIsInstance<PlaylistItem>().filterNot { playlist ->
                                 playlist.id == "SE"
@@ -871,11 +889,15 @@ class HomeViewModel
         ) {
             viewModelScope.launch(Dispatchers.IO) {
                 try {
+                    beginAccountRefresh()
                     val authState = switchSavedYouTubeAccount(account).getOrThrow()
 
                     if (forceSyncOnSwitch && account.ytmSync && authState.hasLoginCookie) {
+                        syncUtils.clearRemoteLibraryState()
                         syncUtils.performFullSync(authoritative = true)
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Error switching account")
                     reportException(e)
@@ -891,6 +913,7 @@ class HomeViewModel
 
             viewModelScope.launch(Dispatchers.IO) {
                 try {
+                    val refreshGeneration = beginAccountRefresh()
                     _accountChannelsState.value = AccountChannelsState.Loading
 
                     context.dataStore.edit { preferences ->
@@ -909,11 +932,12 @@ class HomeViewModel
                     YouTube.authState = authState
 
                     supervisorScope {
-                        launch { refreshAccountIdentity() }
-                        launch { refreshAccountPlaylistsInternal() }
+                        launch { refreshAccountIdentity(refreshGeneration) }
+                        launch { refreshAccountPlaylistsInternal(refreshGeneration) }
                     }
 
                     if (forceSyncOnSwitch && context.dataStore.get(YtmSyncKey, true) && authState.hasLoginCookie) {
+                        syncUtils.clearRemoteLibraryState()
                         syncUtils.performFullSync(authoritative = true)
                     }
                 } catch (e: CancellationException) {
@@ -969,14 +993,16 @@ class HomeViewModel
 
                             if (isLoggedIn && cookie != null && cookie.isNotEmpty()) {
                                 if (!prepareYouTubeAccount(cookie)) {
+                                    syncUtils.clearRemoteLibraryState()
                                     clearAccountData()
                                     return@collect
                                 }
 
+                                val refreshGeneration = beginAccountRefresh()
                                 supervisorScope {
                                     kotlinx.coroutines.delay(100)
-                                    launch { refreshAccountIdentity() }
-                                    launch { refreshAccountPlaylistsInternal() }
+                                    launch { refreshAccountIdentity(refreshGeneration) }
+                                    launch { refreshAccountPlaylistsInternal(refreshGeneration) }
                                 }
 
                                 if (loginTransition) {
@@ -992,6 +1018,7 @@ class HomeViewModel
                                     }
                                 }
                             } else {
+                                syncUtils.clearRemoteLibraryState()
                                 clearAccountData()
                             }
                         } catch (e: CancellationException) {
