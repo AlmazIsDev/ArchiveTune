@@ -20,30 +20,19 @@ import moe.rukamori.archivetune.innertube.NewPipeUtils
 import moe.rukamori.archivetune.innertube.PlaybackAuthState
 import moe.rukamori.archivetune.innertube.YouTube
 import moe.rukamori.archivetune.innertube.models.YouTubeClient
-import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.ANDROID_CREATOR
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.ANDROID_MUSIC
-import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.ANDROID_TESTSUITE
-import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.ANDROID_UNPLUGGED
-import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.ANDROID_VR_1_43_32
-import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.ANDROID_VR_1_61_48
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.ANDROID_VR_1_65_10
-import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.ANDROID_VR_NO_AUTH
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.IOS
-import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.IOS_MUSIC
-import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.IPADOS
-import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.MOBILE
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.MWEB
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.TVHTML5
-import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.TVHTML5_DOWNGRADED
-import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.TVHTML5_SIMPLY
-import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.TVHTML5_SIMPLY_EMBEDDED_PLAYER
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.VISIONOS
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.WEB
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.WEB_CREATOR
-import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.WEB_EMBEDDED
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.WEB_PRIMARY
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.WEB_REMIX
 import moe.rukamori.archivetune.innertube.models.response.PlayerResponse
+import moe.rukamori.archivetune.morideobfuscator.CipherRuntimeStatus
+import moe.rukamori.archivetune.morideobfuscator.MoriCipherRuntime
 import moe.rukamori.archivetune.utils.potoken.BotGuardTokenGenerator
 import moe.rukamori.archivetune.utils.potoken.PoTokenResult
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -131,12 +120,6 @@ object YTPlayerUtils {
      */
     private val MAIN_CLIENT: YouTubeClient = WEB_REMIX
 
-    private val ANONYMOUS_WEB_EMBEDDED_CLIENT: YouTubeClient =
-        WEB_EMBEDDED.copy(
-            supportsCookieAuthentication = false,
-            friendlyName = "Web Embedded Player (Anonymous)",
-        )
-
     private val ANONYMOUS_MWEB_CLIENT: YouTubeClient =
         MWEB.copy(
             supportsCookieAuthentication = false,
@@ -148,29 +131,12 @@ object YTPlayerUtils {
      */
     private val STREAM_FALLBACK_CLIENTS: Array<YouTubeClient> =
         arrayOf(
-            ANDROID_VR_NO_AUTH,
             ANDROID_VR_1_65_10,
-            ANDROID_VR_1_61_48,
-            ANDROID_VR_1_43_32,
-            TVHTML5_DOWNGRADED,
-            WEB_EMBEDDED,
-            WEB_CREATOR,
-            WEB_REMIX,
-            MWEB,
-            WEB,
-            WEB_PRIMARY,
-            TVHTML5,
-            TVHTML5_SIMPLY,
-            IOS,
-            MOBILE,
-            ANDROID_MUSIC,
-            IOS_MUSIC,
-            ANDROID_CREATOR,
-            ANDROID_TESTSUITE,
-            ANDROID_UNPLUGGED,
-            IPADOS,
             VISIONOS,
-            TVHTML5_SIMPLY_EMBEDDED_PLAYER,
+            WEB_REMIX,
+            WEB,
+            MWEB,
+            WEB_CREATOR,
         )
 
     private data class CachedStreamUrl(
@@ -520,7 +486,7 @@ object YTPlayerUtils {
     ): YouTubeClient =
         when (preferredStreamClient) {
             PlayerStreamClient.ANDROID_VR -> {
-                ANDROID_VR_NO_AUTH
+                ANDROID_VR_1_65_10
             }
 
             PlayerStreamClient.WEB_REMIX -> {
@@ -568,7 +534,6 @@ object YTPlayerUtils {
                     add(client)
                     if (authState.hasPlaybackLoginContext) {
                         when (client) {
-                            WEB_EMBEDDED -> add(ANONYMOUS_WEB_EMBEDDED_CLIENT)
                             MWEB -> add(ANONYMOUS_MWEB_CLIENT)
                             else -> Unit
                         }
@@ -583,9 +548,6 @@ object YTPlayerUtils {
                 ?.let { add(it) }
             addAll(orderedFallbackClients)
             if (preferredYouTubeClient != MAIN_CLIENT) add(MAIN_CLIENT)
-            if (preferredStreamClient == PlayerStreamClient.WEB_REMIX) {
-                addAll(STREAM_FALLBACK_CLIENTS)
-            }
         }.distinct()
     }
 
@@ -1500,8 +1462,16 @@ object YTPlayerUtils {
         videoId: String,
         authState: PlaybackAuthState,
     ): Boolean {
-        val isWebClient = PlaybackAuthState.supportsGvsPoToken(client)
         val isCiphered = isCipheredFormat(format)
+        if (isCiphered && MoriCipherRuntime.snapshot.value.status == CipherRuntimeStatus.DEGRADED) {
+            Timber.tag(logTag).w(
+                "Skipping ciphered %s stream candidate because the JavaScript cipher runtime is degraded",
+                client.clientName,
+            )
+            return true
+        }
+
+        val isWebClient = PlaybackAuthState.supportsGvsPoToken(client)
         val hasGvsPoToken = !authState.resolveGvsPoToken(client, videoId).isNullOrBlank()
         if (
             !shouldSkipCipheredWebPlaybackCandidate(
@@ -1554,7 +1524,6 @@ object YTPlayerUtils {
 
     /**
      * Wrapper around the [NewPipeUtils.getStreamUrl] function which reports exceptions.
-     * Also patches cver to match the client version.
      */
     private suspend fun findUrl(
         format: PlayerResponse.StreamingData.Format,
@@ -1565,9 +1534,7 @@ object YTPlayerUtils {
         Timber.tag(logTag).i("Finding stream URL for format: ${format.mimeType}, videoId: $videoId")
         return NewPipeUtils
             .getStreamUrl(format, videoId, client, authState)
-            .map { url ->
-                if (client == null) url else StreamClientUtils.patchClientVersion(url, client.clientVersion)
-            }.onSuccess { Timber.tag(logTag).i("Stream URL obtained successfully") }
+            .onSuccess { Timber.tag(logTag).i("Stream URL obtained successfully") }
     }
 
     private fun Throwable.isJavaScriptPlayerExtractorFailure(): Boolean {
