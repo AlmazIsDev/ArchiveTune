@@ -362,6 +362,21 @@ object YTPlayerUtils {
         return authState.withGeneratedPoTokens(videoId, tokenResult)
     }
 
+    suspend fun ensureWebPoTokensForSubtitles(videoId: String): PlaybackAuthState {
+        var authState = YouTube.currentPlaybackAuthState()
+        if (!authState.resolveSubsPoToken(WEB_REMIX, videoId).isNullOrBlank()) return authState
+
+        if (authState.sessionId.isNullOrBlank()) {
+            authState =
+                ensureVisitorDataReady(
+                    videoId = videoId,
+                    authState = authState,
+                    reason = "subtitle playback authentication",
+                )
+        }
+        return mintWebPlaybackPoTokens(videoId, authState)
+    }
+
     private fun PlaybackAuthState.withGeneratedPoTokens(
         videoId: String,
         tokenResult: PoTokenResult,

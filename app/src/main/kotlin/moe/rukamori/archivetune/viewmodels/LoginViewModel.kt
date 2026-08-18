@@ -11,16 +11,13 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import moe.rukamori.archivetune.auth.CompleteYouTubeLoginUseCase
-import moe.rukamori.archivetune.auth.GenerateYouTubePoTokensUseCase
 import moe.rukamori.archivetune.auth.MissingYouTubeDataSyncIdException
-import moe.rukamori.archivetune.auth.SaveYouTubePoTokensUseCase
 import moe.rukamori.archivetune.auth.UpdateYouTubeLoginContextUseCase
 import moe.rukamori.archivetune.innertube.PlaybackAuthState
 import timber.log.Timber
@@ -59,8 +56,6 @@ class LoginViewModel
     constructor(
         private val completeYouTubeLogin: CompleteYouTubeLoginUseCase,
         private val updateYouTubeLoginContext: UpdateYouTubeLoginContextUseCase,
-        private val generateYouTubePoTokens: GenerateYouTubePoTokensUseCase,
-        private val saveYouTubePoTokens: SaveYouTubePoTokensUseCase,
     ) : ViewModel() {
         private val _screenState = MutableStateFlow<LoginScreenState>(LoginScreenState.Empty)
         val screenState: StateFlow<LoginScreenState> = _screenState.asStateFlow()
@@ -70,7 +65,6 @@ class LoginViewModel
         private var loginJob: Job? = null
         private var activeCookie: String? = null
         private var completedCookie: String? = null
-        private var latestGvsPoToken: String? = null
 
         fun onVisitorDataExtracted(visitorData: String?) {
             val normalized = visitorData.normalizeAuthValue() ?: return
@@ -94,11 +88,6 @@ class LoginViewModel
             activeCookie?.let { startLogin(it, replaceActive = true) }
         }
 
-        fun onGvsPoTokenExtracted(gvsPoToken: String?) {
-            val normalized = gvsPoToken.normalizeAuthValue() ?: return
-            latestGvsPoToken = normalized
-        }
-
         fun onCookiesCaptured(cookie: String?) {
             val normalizedCookie = cookie.normalizeAuthValue() ?: return
             startLogin(normalizedCookie, replaceActive = false)
@@ -111,9 +100,6 @@ class LoginViewModel
             if (completedCookie == normalizedCookie) return
             if (!replaceActive && loginJob?.isActive == true && activeCookie == normalizedCookie) return
 
-            if (activeCookie != null && (activeCookie != normalizedCookie || replaceActive)) {
-                latestGvsPoToken = null
-            }
             activeCookie = normalizedCookie
             loginJob?.cancel()
             loginJob =
@@ -127,10 +113,6 @@ class LoginViewModel
                         completedCookie = normalizedCookie
                         latestVisitorData = session.authState.visitorData
                         latestDataSyncId = session.authState.dataSyncId
-                        persistPoTokens(
-                            sessionId = session.authState.sessionId,
-                            visitorData = session.authState.visitorData,
-                        )
                         _screenState.value =
                             LoginScreenState.Success(
                                 LoginAccountUiModel(
@@ -152,34 +134,6 @@ class LoginViewModel
                             )
                     }
                 }
-        }
-
-        private suspend fun persistPoTokens(
-            sessionId: String?,
-            visitorData: String?,
-        ) {
-            val resolvedSessionId = sessionId ?: return
-            val generatedTokens =
-                try {
-                    generateYouTubePoTokens(resolvedSessionId)
-                } catch (cancellation: CancellationException) {
-                    throw cancellation
-                } catch (throwable: Throwable) {
-                    Timber.w(throwable, "Failed to generate YouTube PO tokens during login")
-                    null
-            }
-            val gvsToken = generatedTokens?.gvsToken ?: latestGvsPoToken
-
-            try {
-                saveYouTubePoTokens(
-                    gvsToken = gvsToken,
-                    visitorData = visitorData,
-                )
-            } catch (cancellation: CancellationException) {
-                throw cancellation
-            } catch (throwable: Throwable) {
-                Timber.w(throwable, "Failed to persist YouTube PO tokens after login")
-            }
         }
     }
 
