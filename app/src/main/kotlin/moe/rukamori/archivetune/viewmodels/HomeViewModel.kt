@@ -49,7 +49,6 @@ import moe.rukamori.archivetune.home.ObserveHomePresentationPreferencesUseCase
 import moe.rukamori.archivetune.innertube.YouTube
 import moe.rukamori.archivetune.innertube.models.AccountChannel
 import moe.rukamori.archivetune.innertube.models.PlaylistItem
-import moe.rukamori.archivetune.innertube.models.SongItem
 import moe.rukamori.archivetune.innertube.models.WatchEndpoint
 import moe.rukamori.archivetune.innertube.models.YTItem
 import moe.rukamori.archivetune.innertube.models.filterExplicit
@@ -320,11 +319,8 @@ class HomeViewModel
             }
 
         private fun HomePage.extractQuickPicks(): Pair<HomePage, HomePage.Section?> {
-            val quickPicksIndex = sections.indexOfFirst { section ->
-                section.numItemsPerColumn != null && section.items.all { it is SongItem }
-            }
-                .takeIf { it >= 0 }
-                ?: sections.indexOfFirst { section ->
+            val quickPicksIndex =
+                sections.indexOfFirst { section ->
                     section.title.equals(context.getString(R.string.quick_picks), ignoreCase = true) ||
                         section.title.contains("quick pick", ignoreCase = true)
                 }
