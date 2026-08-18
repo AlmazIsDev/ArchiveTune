@@ -350,12 +350,13 @@ private fun HomeContent(
                         }
                         item(
                             key = "home_remote_quick_picks",
-                            contentType = "media_shelf",
+                            contentType = "quick_picks",
                         ) {
-                            HomePageSectionContent(
+                            RemoteQuickPicksSection(
                                 section = remoteQuickPicks,
                                 mediaMetadata = mediaMetadata,
                                 isPlaying = isPlaying,
+                                displayMode = uiState.quickPicksDisplayMode,
                                 navController = navController,
                                 playerConnection = playerConnection,
                                 menuState = menuState,

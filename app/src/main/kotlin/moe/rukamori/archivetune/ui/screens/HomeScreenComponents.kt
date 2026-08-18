@@ -117,11 +117,13 @@ import moe.rukamori.archivetune.playback.queues.ListQueue
 import moe.rukamori.archivetune.playback.queues.YouTubeQueue
 import moe.rukamori.archivetune.ui.component.AlbumGridItem
 import moe.rukamori.archivetune.ui.component.ArtistGridItem
+import moe.rukamori.archivetune.ui.component.IconButton
 import moe.rukamori.archivetune.ui.component.MenuState
 import moe.rukamori.archivetune.ui.component.SongGridItem
 import moe.rukamori.archivetune.ui.component.SongListItem
 import moe.rukamori.archivetune.ui.component.SpeedDialGridItem
 import moe.rukamori.archivetune.ui.component.YouTubeGridItem
+import moe.rukamori.archivetune.ui.component.YouTubeListItem
 import moe.rukamori.archivetune.ui.menu.AlbumMenu
 import moe.rukamori.archivetune.ui.menu.ArtistMenu
 import moe.rukamori.archivetune.ui.menu.PlaylistMenu
@@ -489,6 +491,134 @@ fun QuickPicksSection(
                                             menuState.show {
                                                 SongMenu(
                                                     originalSong = song,
+                                                    navController = navController,
+                                                    onDismiss = menuState::dismiss,
+                                                )
+                                            }
+                                        },
+                                    ),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(
+    ExperimentalFoundationApi::class,
+    ExperimentalMaterial3Api::class,
+)
+@Composable
+fun RemoteQuickPicksSection(
+    section: HomePage.Section,
+    mediaMetadata: MediaMetadata?,
+    isPlaying: Boolean,
+    displayMode: QuickPicksDisplayMode,
+    navController: NavController,
+    playerConnection: PlayerConnection,
+    menuState: MenuState,
+    haptic: HapticFeedback,
+    scope: CoroutineScope,
+    modifier: Modifier = Modifier,
+) {
+    val songs =
+        remember(section.items) {
+            section.items.filterIsInstance<SongItem>().distinctBy(SongItem::id)
+        }
+
+    when (displayMode) {
+        QuickPicksDisplayMode.CARD -> {
+            val songSection = remember(section, songs) { section.copy(items = songs) }
+            HomePageSectionContent(
+                section = songSection,
+                mediaMetadata = mediaMetadata,
+                isPlaying = isPlaying,
+                navController = navController,
+                playerConnection = playerConnection,
+                menuState = menuState,
+                haptic = haptic,
+                scope = scope,
+                modifier = modifier,
+            )
+        }
+
+        QuickPicksDisplayMode.LIST -> {
+            BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+                val widthFactor = if (maxWidth * 0.475f >= 320.dp) 0.475f else 0.9f
+                val itemWidth = maxWidth * widthFactor
+                val lazyGridState = rememberLazyGridState()
+                val snapLayoutInfoProvider =
+                    remember(lazyGridState, widthFactor) {
+                        buildSnapLayoutInfoProvider(
+                            lazyGridState = lazyGridState,
+                            positionInLayout = { layoutSize, itemSize ->
+                                layoutSize * widthFactor / 2f - itemSize / 2f
+                            },
+                        )
+                    }
+                LazyHorizontalGrid(
+                    state = lazyGridState,
+                    rows = GridCells.Fixed(4),
+                    flingBehavior = rememberSnapFlingBehavior(snapLayoutInfoProvider),
+                    contentPadding =
+                        WindowInsets.systemBars
+                            .only(WindowInsetsSides.Horizontal)
+                            .asPaddingValues(),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(ListItemHeight * 4),
+                ) {
+                    items(
+                        items = songs,
+                        key = SongItem::id,
+                        contentType = { "remote_quick_pick_song" },
+                    ) { song ->
+                        YouTubeListItem(
+                            item = song,
+                            isActive = song.id == mediaMetadata?.id,
+                            isPlaying = isPlaying,
+                            isSwipeable = false,
+                            trailingContent = {
+                                IconButton(
+                                    onClick = {
+                                        menuState.show {
+                                            YouTubeSongMenu(
+                                                song = song,
+                                                navController = navController,
+                                                onDismiss = menuState::dismiss,
+                                            )
+                                        }
+                                    },
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.more_vert),
+                                        contentDescription = null,
+                                    )
+                                }
+                            },
+                            modifier =
+                                Modifier
+                                    .width(itemWidth)
+                                    .combinedClickable(
+                                        onClick = {
+                                            if (song.id == mediaMetadata?.id) {
+                                                playerConnection.player.togglePlayPause()
+                                            } else {
+                                                playerConnection.playQueue(
+                                                    YouTubeQueue(
+                                                        endpoint = song.endpoint ?: WatchEndpoint(videoId = song.id),
+                                                        preloadItem = song.toMediaMetadata(),
+                                                    ),
+                                                )
+                                            }
+                                        },
+                                        onLongClick = {
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            menuState.show {
+                                                YouTubeSongMenu(
+                                                    song = song,
                                                     navController = navController,
                                                     onDismiss = menuState::dismiss,
                                                 )
