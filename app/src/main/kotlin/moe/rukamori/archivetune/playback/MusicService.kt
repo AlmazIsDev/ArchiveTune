@@ -8280,9 +8280,19 @@ class MusicService :
 
     private fun Song.withPresenceMetadata(metadataSong: Song): Song {
         val resolvedArtists =
-            metadataSong.artists.takeIf { metadataArtists ->
-                metadataArtists.any { it.hasRemotePresenceId() }
-            } ?: artists
+            metadataSong.artists
+                .takeIf { metadataArtists ->
+                    metadataArtists.any { it.hasRemotePresenceId() }
+                }?.map { metadataArtist ->
+                    val persistedArtist =
+                        artists.firstOrNull { artist ->
+                            artist.id == metadataArtist.id || artist.channelId == metadataArtist.id
+                        }
+                    metadataArtist.copy(
+                        thumbnailUrl = metadataArtist.thumbnailUrl ?: persistedArtist?.thumbnailUrl,
+                        channelId = metadataArtist.channelId ?: persistedArtist?.channelId,
+                    )
+                } ?: artists
 
         return copy(
             song =
@@ -8337,7 +8347,7 @@ class MusicService :
                 ArtistEntity(
                     id = artist.id ?: "LA_unknown_${artist.name}",
                     name = artist.name,
-                    thumbnailUrl = if (!artist.thumbnailUrl.isNullOrBlank()) artist.thumbnailUrl else media.thumbnailUrl,
+                    thumbnailUrl = artist.thumbnailUrl,
                     isLocal = artist.id == null || artist.id.isLocalMediaId(),
                 )
             }
