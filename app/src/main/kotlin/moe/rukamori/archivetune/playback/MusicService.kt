@@ -1986,7 +1986,17 @@ class MusicService :
             is DiscordPresenceDecision.Visible -> {
                 clearDiscordHoldState()
                 ensureDiscordSyncFresh(request.epoch)
-                val snapshot = buildDiscordPresenceSnapshot(song, decision.isPaused) ?: return false
+                val snapshot =
+                    buildDiscordPresenceSnapshot(
+                        song = song,
+                        mode = decision.mode,
+                    ) ?: run {
+                        requestDiscordSync(
+                            reason = "playback_changed_before_presence_apply",
+                            force = true,
+                        )
+                        return false
+                    }
                 ensureDiscordSyncFresh(request.epoch)
                 val updated =
                     DiscordPresenceManager.updateNow(
@@ -2022,15 +2032,31 @@ class MusicService :
 
     private suspend fun buildDiscordPresenceSnapshot(
         song: Song?,
-        isPaused: Boolean,
+        mode: PresenceMode,
     ): DiscordPresenceSnapshot? {
-        val resolvedSong = song ?: return null
-        val positionMs = withContext(Dispatchers.Main.immediate) { player.currentPosition }
-        return DiscordPresenceSnapshot(
-            song = resolvedSong,
-            positionMs = positionMs,
-            isPaused = isPaused,
-        )
+        val expectedSong = song ?: return null
+        return withContext(Dispatchers.Main.immediate) {
+            val currentSong = currentPresenceSong() ?: return@withContext null
+            if (currentSong.song.id != expectedSong.song.id) {
+                return@withContext null
+            }
+
+            val isPaused =
+                when {
+                    !player.playWhenReady -> true
+                    player.isPlaying -> false
+                    else -> return@withContext null
+                }
+            if (isPaused != (mode == PresenceMode.Paused)) {
+                return@withContext null
+            }
+
+            DiscordPresenceSnapshot(
+                song = currentSong,
+                positionMs = player.currentPosition,
+                isPaused = isPaused,
+            )
+        }
     }
 
     private fun cancelRestoredQueueHydration() {
