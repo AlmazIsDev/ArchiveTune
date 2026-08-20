@@ -361,7 +361,6 @@ private fun HomeContent(
                                 playerConnection = playerConnection,
                                 menuState = menuState,
                                 haptic = haptic,
-                                scope = scope,
                                 modifier = Modifier.animateItem(),
                             )
                         }
