@@ -18,6 +18,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -334,26 +335,27 @@ class HomeViewModel
             return copy(sections = sections.toMutableList().apply { removeAt(quickPicksIndex) }) to sections[quickPicksIndex]
         }
 
-        private suspend fun loadPersonalizedQuickPicks() {
-            if (quickPicksMode.first() != QuickPicks.QUICK_PICKS) return
+        private suspend fun loadPersonalizedQuickPicks(): Boolean {
+            if (quickPicksMode.first() != QuickPicks.QUICK_PICKS) return false
             val excludedSongIds = remoteQuickPicks.value?.items.orEmpty().mapTo(mutableSetOf(), YTItem::id)
-            loadPersonalizedQuickPicksUseCase(excludedSongIds)
-                .onSuccess { songs ->
-                    if (songs.isNotEmpty()) {
-                        remoteQuickPicks.value =
-                            HomePage.Section(
-                                title = "",
-                                label = null,
-                                thumbnail = null,
-                                endpoint = null,
-                                items = songs,
-                                numItemsPerColumn = 4,
-                            )
-                    }
-                }.onFailure { throwable ->
+            val songs =
+                loadPersonalizedQuickPicksUseCase(excludedSongIds).getOrElse { throwable ->
                     if (throwable is CancellationException) throw throwable
                     reportException(throwable)
+                    return false
                 }
+            if (songs.isEmpty()) return false
+
+            remoteQuickPicks.value =
+                HomePage.Section(
+                    title = "",
+                    label = null,
+                    thumbnail = null,
+                    endpoint = null,
+                    items = songs,
+                    numItemsPerColumn = 4,
+                )
+            return true
         }
 
         private fun List<Song>.toQuickPickSample(): List<Song> =
@@ -518,7 +520,7 @@ class HomeViewModel
                     val fromTimeStamp = System.currentTimeMillis() - 86400000 * 7 * 2
 
                     launch { loadSpeedDialItems() }
-                    launch { loadPersonalizedQuickPicks() }
+                    val personalizedQuickPicks = async { loadPersonalizedQuickPicks() }
                     launch {
                         forgottenFavorites.value =
                             database
@@ -581,7 +583,15 @@ class HomeViewModel
                                         )
                                     },
                             )
-                        val (pageWithoutQuickPicks, _) = filteredPage.extractQuickPicks()
+                        val (pageWithoutQuickPicks, remoteQuickPicksFallback) = filteredPage.extractQuickPicks()
+                        if (
+                            quickPicksMode.first() == QuickPicks.QUICK_PICKS &&
+                            !personalizedQuickPicks.await()
+                        ) {
+                            remoteQuickPicksFallback?.takeIf { it.items.isNotEmpty() }?.let { fallback ->
+                                remoteQuickPicks.value = fallback
+                            }
+                        }
                         homePage.value = pageWithoutQuickPicks
                     }
                 }
