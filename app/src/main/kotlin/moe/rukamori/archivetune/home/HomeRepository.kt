@@ -56,10 +56,9 @@ class HomeRepository
                 .distinctUntilChanged()
 
         suspend fun loadQuickPickSeeds(limit: Int): List<Song> {
-            val fromTimestamp = System.currentTimeMillis() - QUICK_PICKS_HISTORY_WINDOW_MS
             val mostPlayed =
                 database
-                    .mostPlayedSongs(fromTimestamp, limit = limit * 3)
+                    .mostPlayedSongs(fromTimeStamp = 0L, limit = limit * 3)
                     .first()
                     .filter { song -> song.isYouTubeRecommendationSeed() }
             val candidates =
@@ -86,7 +85,6 @@ class HomeRepository
         private fun Song.isYouTubeRecommendationSeed(): Boolean = !song.isLocal && id.length == YOUTUBE_VIDEO_ID_LENGTH
 
         private companion object {
-            const val QUICK_PICKS_HISTORY_WINDOW_MS = 90L * 24 * 60 * 60 * 1000
             const val YOUTUBE_VIDEO_ID_LENGTH = 11
         }
     }
