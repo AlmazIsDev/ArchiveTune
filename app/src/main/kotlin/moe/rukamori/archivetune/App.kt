@@ -46,6 +46,7 @@ import moe.rukamori.archivetune.lastfm.LastFM
 import moe.rukamori.archivetune.morideobfuscator.MoriCipherConfig
 import moe.rukamori.archivetune.morideobfuscator.MoriCipherRuntime
 import moe.rukamori.archivetune.paxsenix.PaxsenixLyrics
+import moe.rukamori.archivetune.playback.stream.YtDlpUpdateScheduler
 import moe.rukamori.archivetune.scrobbling.LastFmServiceConfig
 import moe.rukamori.archivetune.storage.StorageFolderKind
 import moe.rukamori.archivetune.storage.StorageLocationRepository
@@ -147,6 +148,7 @@ class App :
     }
 
     private fun initializeCriticalSync() {
+        YtDlpUpdateScheduler.schedule(this)
         MoriCipherRuntime.initialize(
             MoriCipherConfig(
                 cacheDirectory = File(noBackupFilesDir, "mori_cipher"),

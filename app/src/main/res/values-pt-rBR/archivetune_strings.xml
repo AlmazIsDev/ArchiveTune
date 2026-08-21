@@ -395,10 +395,6 @@
     <string name="audio_crossfade_seconds">%1$s s</string>
     <string name="crossfade_gapless_title">Ignorar álbuns sem intervalo</string>
     <string name="crossfade_gapless_description">Não aplicar crossfade em músicas consecutivas do mesmo álbum.</string>
-    <string name="player_stream_client">Cliente de reprodução</string>
-    <string name="player_stream_client_desc">Controla qual fonte de reprodução é usada para buscar streams</string>
-    <string name="player_stream_client_web_remix">Web Remix</string>
-    <string name="player_stream_client_web_remix_desc">Suporte estendido a formatos ao custo de velocidade. A descriptografia de assinatura por JavaScript adiciona um atraso inicial de ~5–10 segundos.</string>
     <string name="settings_section_player_content">Player e conteúdo</string>
     <string name="settings_appearance_subtitle">Temas, layout e estilos visuais</string>
     <string name="settings_playback_title">Reprodução</string>
@@ -600,7 +596,6 @@
     <string name="show_lyrics_player_controls">Mostrar controles do player</string>
     <string name="block_artist">Bloquear artista</string>
     <string name="unblock_artist">Desbloquear artista</string>
-    <string name="player_stream_client_archivetune_extractor">Extrator do ArchiveTune</string>
     <string name="stats_top_songs">Top músicas</string>
     <string name="stats_show_all_songs">Mostrar todas as %1$d músicas</string>
     <string name="stats_show_top_songs">Mostrar top 5</string>

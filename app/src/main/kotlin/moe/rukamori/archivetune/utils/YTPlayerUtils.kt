@@ -482,7 +482,6 @@ object YTPlayerUtils {
 
     internal fun resolvePreferredPlaybackClient(
         preferredStreamClient: PlayerStreamClient,
-        authState: PlaybackAuthState,
     ): YouTubeClient =
         when (preferredStreamClient) {
             PlayerStreamClient.ANDROID_VR -> {
@@ -491,10 +490,6 @@ object YTPlayerUtils {
 
             PlayerStreamClient.WEB_REMIX -> {
                 WEB_REMIX
-            }
-
-            PlayerStreamClient.ARCHIVETUNE_EXTRACTOR -> {
-                if (authState.hasPlaybackLoginContext) ANDROID_MUSIC else WEB_REMIX
             }
 
             PlayerStreamClient.HI_RES_LOSSLESS -> {
@@ -522,7 +517,7 @@ object YTPlayerUtils {
         preferredStreamClient: PlayerStreamClient,
         authState: PlaybackAuthState,
     ): List<YouTubeClient> {
-        val preferredYouTubeClient = resolvePreferredPlaybackClient(preferredStreamClient, authState)
+        val preferredYouTubeClient = resolvePreferredPlaybackClient(preferredStreamClient)
         val lastSuccessfulClient =
             lastSuccessfulClientKey?.let { key ->
                 STREAM_FALLBACK_CLIENTS.find { StreamClientUtils.buildClientKey(it) == key }

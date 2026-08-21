@@ -163,10 +163,6 @@
         <item quantity="many">%d ثانية</item>
         <item quantity="other">%d ثانية</item>
     </plurals>
-    <string name="player_stream_client">عميل التشغيل</string>
-    <string name="player_stream_client_desc">يتحكم في تطبيق YouTube المستخدم لجلب البث المباشر</string>
-    <string name="player_stream_client_web_remix">ويب ريميكس</string>
-    <string name="player_stream_client_web_remix_desc">دعم صيغ إضافية على حساب السرعة. يتسبب فك تشفير توقيع JavaScript في تأخير بدء التشغيل بنحو 5 إلى 10 ثوانٍ.</string>
     <string name="settings_section_player_content">المشغل والمحتوى</string>
     <string name="similar_content">محتوى مشابه</string>
     <string name="year_in_music">عامك الموسيقي</string>
@@ -477,7 +473,6 @@
     <string name="audio_crossfade_seconds">%1$s ث</string>
     <string name="crossfade_gapless_title">تخطي ألبومات التشغيل المتواصل</string>
     <string name="crossfade_gapless_description">عدم تطبيق التلاشي المتقاطع على الأغاني المتتالية من نفس الألبوم.</string>
-    <string name="player_stream_client_archivetune_extractor">مستخرج ArchiveTune</string>
     <string name="settings_appearance_subtitle">السمات، التخطيط، والأنماط البصرية</string>
     <string name="settings_playback_title">التشغيل</string>
     <string name="settings_playback_subtitle">سلوك الصوت، التلاشي المتقاطع، والتشغيل في الخلفية</string>

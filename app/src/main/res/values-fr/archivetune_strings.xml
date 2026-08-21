@@ -180,10 +180,6 @@
     <string name="theme_presets_title">Préréglages</string>
     <string name="copy">Copier</string>
     <string name="player_design_v5">Petit</string>
-    <string name="player_stream_client">Client de lecture</string>
-    <string name="player_stream_client_desc">Détermine la source de lecture utilisée pour récupérer les flux</string>
-    <string name="player_stream_client_web_remix">Remix Web</string>
-    <string name="player_stream_client_web_remix_desc">Prise en charge étendue des formats au détriment de la vitesse. Le décryptage des signatures JavaScript entraîne un délai de démarrage d\'environ 5 à 10 secondes.</string>
     <string name="crop_thumbnail_to_square">Recadrer les miniatures au format 1:1</string>
     <string name="crop_thumbnail_to_square_desc">Afficher les miniatures YouTube au format carré au lieu du format 16:9</string>
     <string name="backup_in_progress">Sauvegarde en cours</string>
@@ -574,7 +570,6 @@
     <string name="theme_creator_title">Créateur de thèmes</string>
     <string name="block_artist">Bloquer l\'artiste</string>
     <string name="unblock_artist">Débloquer l\'artiste</string>
-    <string name="player_stream_client_archivetune_extractor">Extracteur ArchiveTune</string>
     <string name="music_recognition_settings">Paramètres de reconnaissance musicale</string>
     <string name="music_recognition_background_title">Reconnaissance en arrière-plan</string>
     <string name="music_recognition_background_description">Lorsqu\'elle est activée, la vignette « Paramètres rapides » détecte la lecture audio sur cet appareil sans ouvrir ArchiveTune.</string>
