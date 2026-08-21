@@ -17,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.guava.future
+import moe.rukamori.archivetune.morideobfuscator.ytdlp.YtDlpRuntimeStore
 import timber.log.Timber
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutionException
@@ -116,7 +117,11 @@ class ResolveAudioStreamUseCase
                 } catch (cancellation: CancellationException) {
                     throw cancellation
                 } catch (throwable: Throwable) {
-                    Timber.tag(TAG).w("Local yt-dlp resolution failed for %s; using native fallback", request.mediaId)
+                    Timber.tag(TAG).w(
+                        throwable,
+                        "Local yt-dlp resolution failed for %s; using native fallback",
+                        request.mediaId,
+                    )
                     throwable
                 }
 

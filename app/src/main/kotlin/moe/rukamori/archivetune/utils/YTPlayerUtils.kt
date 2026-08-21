@@ -31,8 +31,6 @@ import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.WEB_CRE
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.WEB_PRIMARY
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.WEB_REMIX
 import moe.rukamori.archivetune.innertube.models.response.PlayerResponse
-import moe.rukamori.archivetune.morideobfuscator.CipherRuntimeStatus
-import moe.rukamori.archivetune.morideobfuscator.MoriCipherRuntime
 import moe.rukamori.archivetune.utils.potoken.BotGuardTokenGenerator
 import moe.rukamori.archivetune.utils.potoken.PoTokenResult
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -1415,14 +1413,6 @@ object YTPlayerUtils {
         authState: PlaybackAuthState,
     ): Boolean {
         val isCiphered = isCipheredFormat(format)
-        if (isCiphered && MoriCipherRuntime.snapshot.value.status == CipherRuntimeStatus.DEGRADED) {
-            Timber.tag(logTag).w(
-                "Skipping ciphered %s stream candidate because the JavaScript cipher runtime is degraded",
-                client.clientName,
-            )
-            return true
-        }
-
         val isWebClient = PlaybackAuthState.supportsGvsPoToken(client)
         val hasGvsPoToken = !authState.resolveGvsPoToken(client, videoId).isNullOrBlank()
         if (

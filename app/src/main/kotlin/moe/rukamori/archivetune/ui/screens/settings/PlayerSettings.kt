@@ -266,10 +266,10 @@ fun PlayerSettings(navController: NavController) {
 
                 item {
                     PreferenceEntry(
-                        title = { Text(stringResource(R.string.mori_cipher_settings_title)) },
-                        description = stringResource(R.string.mori_cipher_settings_description),
-                        icon = { Icon(painterResource(R.drawable.security), null) },
-                        onClick = { navController.navigate("settings/player/chiper") },
+                        title = { Text(stringResource(R.string.ytdlp_settings_title)) },
+                        description = stringResource(R.string.ytdlp_settings_description),
+                        icon = { Icon(painterResource(R.drawable.integration), null) },
+                        onClick = { navController.navigate("settings/player/ytdlp") },
                     )
                 }
 

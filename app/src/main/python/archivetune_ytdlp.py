@@ -64,7 +64,7 @@ def _register_android_jsc_provider():
     from yt_dlp.extractor.youtube.pot._provider import BuiltinIEContentProvider
 
     java_runtime = jclass(
-        "moe.rukamori.archivetune.playback.stream.YtDlpJavaScriptRuntime"
+        "moe.rukamori.archivetune.morideobfuscator.ytdlp.YtDlpJavaScriptRuntime"
     )
 
     @register_provider

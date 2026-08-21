@@ -268,6 +268,7 @@ chaquopy {
         version = "3.11"
         pip {
             install("yt-dlp==2026.8.19")
+            install("yt-dlp-ejs==0.8.0")
         }
     }
 }
@@ -393,8 +394,6 @@ dependencies {
     implementation(libs.accompanist.lyrics.core)
 
     implementation("org.json:json:20240303")
-    implementation(libs.quickjs.kt)
-    implementation(libs.bcpg)
 }
 
 androidComponents {
