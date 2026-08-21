@@ -659,8 +659,13 @@
     <string name="ai_integration">AI Integration</string>
     <string name="ai_integration_desc">Configure AI translation and personalized user automates.</string>
     <string name="ai_provider_settings">Provider</string>
+    <string name="ai_translation_settings">Translation</string>
+    <string name="ai_custom_prompt">Custom translation prompt</string>
+    <string name="ai_custom_prompt_desc">Appended to the built-in lyrics translation instructions.</string>
     <string name="ai_provider">AI provider</string>
     <string name="ai_provider_desc">Choose the AI service.</string>
+    <string name="ai_provider_openai">OpenAI</string>
+    <string name="ai_provider_gemini">Gemini</string>
     <string name="ai_provider_none">None (Disabled)</string>
     <string name="ai_provider_openrouter">OpenRouter</string>
     <string name="ai_custom_endpoint">Custom endpoint</string>
