@@ -71,7 +71,7 @@ data class AiSettingsEditorUiModel(
     val canSave: Boolean = false,
 ) {
     val visible: Boolean
-        get() = field != null
+        get() = this.field != null
 }
 
 @Immutable
