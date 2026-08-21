@@ -85,7 +85,13 @@ fun YtDlpSettings(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val onNavigateUp = remember(navController) { { navController.navigateUp() } }
+    val onNavigateUp =
+        remember(navController) {
+            {
+                navController.navigateUp()
+                Unit
+            }
+        }
     val onNavigateToMain = remember(navController) { { navController.backToMain() } }
     val onCheckForUpdates = remember(viewModel) { { viewModel.checkForUpdates() } }
 
