@@ -45,6 +45,7 @@ import moe.rukamori.archivetune.db.MusicDatabase
 import moe.rukamori.archivetune.db.entities.FormatEntity
 import moe.rukamori.archivetune.db.entities.SongEntity
 import moe.rukamori.archivetune.di.DownloadCache
+import moe.rukamori.archivetune.di.PlayerCache
 import moe.rukamori.archivetune.downloads.DownloadedArtworkRepository
 import moe.rukamori.archivetune.innertube.YouTube
 import moe.rukamori.archivetune.playback.stream.AudioStreamRequest
@@ -71,6 +72,7 @@ class DownloadUtil
         val database: MusicDatabase,
         val databaseProvider: DatabaseProvider,
         @DownloadCache val downloadCache: Cache,
+        @PlayerCache val playerCache: Cache,
         private val downloadedArtworkRepository: DownloadedArtworkRepository,
         private val resolveAudioStream: ResolveAudioStreamUseCase,
     ) {
