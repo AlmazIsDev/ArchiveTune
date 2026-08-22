@@ -242,7 +242,6 @@ def resolve_audio(request_json, runtime_path, cookie_directory):
     cookie_file = _write_cookie_file(request.get("cookie"), cookie_directory)
     try:
         youtube_args = {
-            "player_client": ["all"],
             "skip": ["hls", "dash", "translated_subs"],
         }
         visitor_data = request.get("visitor_data")
@@ -267,7 +266,6 @@ def resolve_audio(request_json, runtime_path, cookie_directory):
             info = _extract_info(YoutubeDL, url, youtube_args, cookie_file)
         except DownloadError as primary_error:
             fallback_args = {
-                "player_client": ["all"],
                 "skip": ["hls", "dash", "translated_subs"],
             }
             try:
