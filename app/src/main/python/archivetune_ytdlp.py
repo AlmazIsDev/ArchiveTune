@@ -254,6 +254,9 @@ def resolve_audio(request_json, runtime_path, cookie_directory):
         visitor_data = request.get("visitor_data")
         if visitor_data:
             youtube_args["visitor_data"] = [visitor_data]
+        data_sync_id = request.get("data_sync_id")
+        if data_sync_id:
+            youtube_args["data_sync_id"] = [data_sync_id]
 
         po_tokens = []
         gvs_token = request.get("po_token_gvs")

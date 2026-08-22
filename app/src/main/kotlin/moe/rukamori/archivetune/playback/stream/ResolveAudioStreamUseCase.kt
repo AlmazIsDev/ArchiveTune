@@ -129,10 +129,6 @@ class ResolveAudioStreamUseCase
                     return ytDlpRepository.resolve(request)
                 } catch (cancellation: CancellationException) {
                     throw cancellation
-                } catch (loginRequired: YTPlayerUtils.LoginRequiredForPlaybackException) {
-                    throw loginRequired
-                } catch (invalidLogin: YTPlayerUtils.InvalidPlaybackLoginContextException) {
-                    throw invalidLogin
                 } catch (throwable: Throwable) {
                     Timber.tag(TAG).w(
                         throwable,
@@ -147,10 +143,25 @@ class ResolveAudioStreamUseCase
             } catch (cancellation: CancellationException) {
                 throw cancellation
             } catch (nativeFailure: Throwable) {
-                nativeFailure.addSuppressed(ytDlpFailure)
-                throw nativeFailure
+                val nativeAuthenticationFailure = nativeFailure.isPlaybackAuthenticationFailure()
+                val ytDlpAuthenticationFailure = ytDlpFailure.isPlaybackAuthenticationFailure()
+                val primaryFailure =
+                    when {
+                        nativeAuthenticationFailure -> nativeFailure
+                        ytDlpAuthenticationFailure -> ytDlpFailure
+                        else -> nativeFailure
+                    }
+                val secondaryFailure = if (primaryFailure === nativeFailure) ytDlpFailure else nativeFailure
+                if (primaryFailure !== secondaryFailure) {
+                    primaryFailure.addSuppressed(secondaryFailure)
+                }
+                throw primaryFailure
             }
         }
+
+        private fun Throwable.isPlaybackAuthenticationFailure(): Boolean =
+            this is YTPlayerUtils.LoginRequiredForPlaybackException ||
+                this is YTPlayerUtils.InvalidPlaybackLoginContextException
 
         private fun AudioStreamRequest.cacheKey(): CacheKey =
             CacheKey(

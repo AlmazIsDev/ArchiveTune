@@ -50,6 +50,7 @@ class YtDlpRuntime
                             .put("cookie", authState.cookie)
                             .put("user_agent", webViewUserAgent)
                             .put("visitor_data", authState.visitorData)
+                            .put("data_sync_id", authState.dataSyncId)
                             .put(
                                 "po_token_gvs",
                                 authState.resolveGvsPoToken(
