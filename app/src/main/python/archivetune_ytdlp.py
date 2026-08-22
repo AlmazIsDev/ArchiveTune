@@ -212,7 +212,7 @@ class _QuietYtDlpLogger:
         pass
 
 
-def _extract_info(youtube_dl, url, youtube_args, cookie_file=None):
+def _extract_info(youtube_dl, url, youtube_args, cookie_file=None, user_agent=None):
     options = {
         "quiet": True,
         "no_warnings": True,
@@ -229,6 +229,8 @@ def _extract_info(youtube_dl, url, youtube_args, cookie_file=None):
     }
     if cookie_file:
         options["cookiefile"] = cookie_file
+    if user_agent:
+        options["http_headers"] = {"User-Agent": user_agent}
     with youtube_dl(options) as downloader:
         return downloader.extract_info(url, download=False)
 
@@ -244,6 +246,7 @@ def resolve_audio(request_json, runtime_path, cookie_directory):
 
     request = json.loads(request_json)
     cookie_file = _write_cookie_file(request.get("cookie"), cookie_directory)
+    user_agent = request.get("user_agent")
     try:
         youtube_args = {
             "skip": ["hls", "dash", "translated_subs"],
@@ -267,7 +270,13 @@ def resolve_audio(request_json, runtime_path, cookie_directory):
 
         url = "https://music.youtube.com/watch?v=" + request["media_id"]
         try:
-            info = _extract_info(YoutubeDL, url, youtube_args, cookie_file)
+            info = _extract_info(
+                YoutubeDL,
+                url,
+                youtube_args,
+                cookie_file,
+                user_agent,
+            )
         except DownloadError as primary_error:
             if cookie_file is None or _is_age_verification_required(primary_error):
                 raise
@@ -275,7 +284,12 @@ def resolve_audio(request_json, runtime_path, cookie_directory):
                 "skip": ["hls", "dash", "translated_subs"],
             }
             try:
-                info = _extract_info(YoutubeDL, url, fallback_args)
+                info = _extract_info(
+                    YoutubeDL,
+                    url,
+                    fallback_args,
+                    user_agent=user_agent,
+                )
             except DownloadError as fallback_error:
                 raise fallback_error from primary_error
 
@@ -287,9 +301,17 @@ def resolve_audio(request_json, runtime_path, cookie_directory):
         )
         stream_url = selected["url"]
         content_length = selected.get("filesize") or 0
+        stream_headers = dict(
+            selected.get("http_headers") or info.get("http_headers") or {}
+        )
+        if user_agent:
+            for header_name in tuple(stream_headers):
+                if header_name.lower() == "user-agent":
+                    del stream_headers[header_name]
+            stream_headers["User-Agent"] = user_agent
         result = {
             "url": stream_url,
-            "headers": selected.get("http_headers") or info.get("http_headers") or {},
+            "headers": stream_headers,
             "format_id": selected.get("format_id") or "",
             "mime_type": _mime_type(selected),
             "codecs": selected.get("acodec") or "",

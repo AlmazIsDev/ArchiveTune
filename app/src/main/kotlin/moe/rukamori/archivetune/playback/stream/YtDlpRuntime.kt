@@ -9,6 +9,7 @@ package moe.rukamori.archivetune.playback.stream
 
 import android.content.Context
 import android.net.Uri
+import android.webkit.WebSettings
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -29,12 +30,14 @@ class YtDlpRuntime
         @ApplicationContext private val context: Context,
     ) {
         private val resolutionPermits = Semaphore(2)
+        @Volatile private var cachedWebViewUserAgent: String? = null
 
         suspend fun resolve(
             request: AudioStreamRequest,
             authState: moe.rukamori.archivetune.innertube.PlaybackAuthState,
-        ): ResolvedAudioStream =
-            resolutionPermits.withPermit {
+        ): ResolvedAudioStream {
+            val webViewUserAgent = resolveWebViewUserAgent()
+            return resolutionPermits.withPermit {
                 withContext(Dispatchers.IO) {
                     startPythonIfNecessary()
                     val activeArchive = YtDlpRuntimeStore.activeArchive(context)
@@ -45,6 +48,7 @@ class YtDlpRuntime
                             .put("network_metered", request.networkMetered)
                             .put("pinned_format_id", request.pinnedFormatId)
                             .put("cookie", authState.cookie)
+                            .put("user_agent", webViewUserAgent)
                             .put("visitor_data", authState.visitorData)
                             .put(
                                 "po_token_gvs",
@@ -100,6 +104,21 @@ class YtDlpRuntime
                     )
                 }
             }
+        }
+
+        private suspend fun resolveWebViewUserAgent(): String {
+            cachedWebViewUserAgent?.let { return it }
+            return withContext(Dispatchers.Main.immediate) {
+                cachedWebViewUserAgent
+                    ?: WebSettings
+                        .getDefaultUserAgent(context)
+                        .trim()
+                        .also { userAgent ->
+                            check(userAgent.isNotEmpty())
+                            cachedWebViewUserAgent = userAgent
+                        }
+            }
+        }
 
         @Synchronized
         private fun startPythonIfNecessary() {
