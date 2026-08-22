@@ -19,9 +19,11 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.guava.future
 import moe.rukamori.archivetune.morideobfuscator.ytdlp.YtDlpRuntimeStore
 import timber.log.Timber
+import java.net.SocketTimeoutException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -70,10 +72,20 @@ class ResolveAudioStreamUseCase
         @WorkerThread
         fun resolveBlocking(request: AudioStreamRequest): ResolvedAudioStream {
             check(Looper.myLooper() != Looper.getMainLooper())
-            val timeoutSeconds = if (request.purpose == StreamPurpose.DOWNLOAD) 60L else 35L
+            val timeoutSeconds =
+                if (request.purpose == StreamPurpose.DOWNLOAD) {
+                    DOWNLOAD_RESOLUTION_TIMEOUT_SECONDS
+                } else {
+                    PLAYBACK_RESOLUTION_TIMEOUT_SECONDS
+                }
             val future = scope.future { invoke(request) }
             return try {
                 future.get(timeoutSeconds, TimeUnit.SECONDS)
+            } catch (throwable: TimeoutException) {
+                future.cancel(true)
+                throw SocketTimeoutException(
+                    "Audio stream resolution timed out after $timeoutSeconds seconds",
+                ).apply { initCause(throwable) }
             } catch (throwable: ExecutionException) {
                 future.cancel(true)
                 throw throwable.cause ?: throwable
@@ -180,5 +192,7 @@ class ResolveAudioStreamUseCase
             const val TAG = "AudioStreamResolver"
             const val STREAM_EXPIRY_SAFETY_MS = 60_000L
             const val MAX_CACHE_ENTRIES = 256
+            const val PLAYBACK_RESOLUTION_TIMEOUT_SECONDS = 120L
+            const val DOWNLOAD_RESOLUTION_TIMEOUT_SECONDS = 180L
         }
     }
