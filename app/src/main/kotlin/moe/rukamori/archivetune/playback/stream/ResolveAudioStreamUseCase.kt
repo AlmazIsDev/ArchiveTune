@@ -18,6 +18,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.guava.future
 import moe.rukamori.archivetune.morideobfuscator.ytdlp.YtDlpRuntimeStore
+import moe.rukamori.archivetune.utils.YTPlayerUtils
 import timber.log.Timber
 import java.net.SocketTimeoutException
 import java.util.concurrent.ConcurrentHashMap
@@ -128,6 +129,10 @@ class ResolveAudioStreamUseCase
                     return ytDlpRepository.resolve(request)
                 } catch (cancellation: CancellationException) {
                     throw cancellation
+                } catch (loginRequired: YTPlayerUtils.LoginRequiredForPlaybackException) {
+                    throw loginRequired
+                } catch (invalidLogin: YTPlayerUtils.InvalidPlaybackLoginContextException) {
+                    throw invalidLogin
                 } catch (throwable: Throwable) {
                     Timber.tag(TAG).w(
                         throwable,

@@ -233,6 +233,10 @@ def _extract_info(youtube_dl, url, youtube_args, cookie_file=None):
         return downloader.extract_info(url, download=False)
 
 
+def _is_age_verification_required(error):
+    return "sign in to confirm your age" in str(error).lower()
+
+
 def resolve_audio(request_json, runtime_path, cookie_directory):
     _ensure_runtime(runtime_path)
     from yt_dlp import YoutubeDL
@@ -265,6 +269,8 @@ def resolve_audio(request_json, runtime_path, cookie_directory):
         try:
             info = _extract_info(YoutubeDL, url, youtube_args, cookie_file)
         except DownloadError as primary_error:
+            if cookie_file is None or _is_age_verification_required(primary_error):
+                raise
             fallback_args = {
                 "skip": ["hls", "dash", "translated_subs"],
             }
