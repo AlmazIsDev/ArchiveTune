@@ -198,15 +198,51 @@ def _choose_format(formats, quality, network_metered, pinned_format_id):
     return not_above_target[-1] if not_above_target else candidates[0]
 
 
+class _QuietYtDlpLogger:
+    def debug(self, message):
+        pass
+
+    def info(self, message):
+        pass
+
+    def warning(self, message):
+        pass
+
+    def error(self, message):
+        pass
+
+
+def _extract_info(youtube_dl, url, youtube_args, cookie_file=None):
+    options = {
+        "quiet": True,
+        "no_warnings": True,
+        "noplaylist": True,
+        "skip_download": True,
+        "socket_timeout": 15,
+        "retries": 1,
+        "extractor_retries": 1,
+        "fragment_retries": 1,
+        "extractor_args": {"youtube": youtube_args},
+        "js_runtimes": {},
+        "remote_components": set(),
+        "logger": _QuietYtDlpLogger(),
+    }
+    if cookie_file:
+        options["cookiefile"] = cookie_file
+    with youtube_dl(options) as downloader:
+        return downloader.extract_info(url, download=False)
+
+
 def resolve_audio(request_json, runtime_path, cookie_directory):
     _ensure_runtime(runtime_path)
     from yt_dlp import YoutubeDL
+    from yt_dlp.utils import DownloadError
 
     request = json.loads(request_json)
     cookie_file = _write_cookie_file(request.get("cookie"), cookie_directory)
     try:
         youtube_args = {
-            "player_client": ["web_music"],
+            "player_client": ["all"],
             "skip": ["hls", "dash", "translated_subs"],
         }
         visitor_data = request.get("visitor_data")
@@ -226,25 +262,18 @@ def resolve_audio(request_json, runtime_path, cookie_directory):
         if po_tokens:
             youtube_args["po_token"] = po_tokens
 
-        options = {
-            "quiet": True,
-            "no_warnings": True,
-            "noplaylist": True,
-            "skip_download": True,
-            "socket_timeout": 15,
-            "retries": 1,
-            "extractor_retries": 1,
-            "fragment_retries": 1,
-            "extractor_args": {"youtube": youtube_args},
-            "js_runtimes": {},
-            "remote_components": set(),
-        }
-        if cookie_file:
-            options["cookiefile"] = cookie_file
-
         url = "https://music.youtube.com/watch?v=" + request["media_id"]
-        with YoutubeDL(options) as downloader:
-            info = downloader.extract_info(url, download=False)
+        try:
+            info = _extract_info(YoutubeDL, url, youtube_args, cookie_file)
+        except DownloadError as primary_error:
+            fallback_args = {
+                "player_client": ["all"],
+                "skip": ["hls", "dash", "translated_subs"],
+            }
+            try:
+                info = _extract_info(YoutubeDL, url, fallback_args)
+            except DownloadError as fallback_error:
+                raise fallback_error from primary_error
 
         selected = _choose_format(
             info.get("formats"),
