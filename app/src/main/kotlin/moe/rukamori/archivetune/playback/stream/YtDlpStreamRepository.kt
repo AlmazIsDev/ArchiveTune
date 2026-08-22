@@ -7,7 +7,6 @@
 
 package moe.rukamori.archivetune.playback.stream
 
-import moe.rukamori.archivetune.utils.YTPlayerUtils
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,8 +16,6 @@ class YtDlpStreamRepository
     constructor(
         private val runtime: YtDlpRuntime,
     ) : AudioStreamRepository {
-        override suspend fun resolve(request: AudioStreamRequest): ResolvedAudioStream {
-            val authState = YTPlayerUtils.ensureWebPoTokensForSubtitles(request.mediaId)
-            return runtime.resolve(request, authState)
-        }
+        override suspend fun resolve(request: AudioStreamRequest): ResolvedAudioStream =
+            runtime.resolve(request, request.authState)
     }
