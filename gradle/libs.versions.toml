@@ -46,7 +46,7 @@ aboutLibraries = "15.0.3"
 leakCanary = "2.14"
 spotless = "8.10.0"
 chaquopy = "17.0.0"
-quickjsKt = "1.0.5"
+quickjsKt = "1.0.10"
 bouncyCastle = "1.85"
 
 
