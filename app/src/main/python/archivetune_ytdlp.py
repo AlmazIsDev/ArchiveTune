@@ -276,9 +276,10 @@ def resolve_audio(request_json, runtime_path, cookie_directory):
     request = json.loads(request_json)
     cookie_file = _write_cookie_file(request.get("cookie"), cookie_directory)
     try:
-        youtube_args = {
+        base_youtube_args = {
             "skip": ["hls", "dash", "translated_subs"],
         }
+        youtube_args = dict(base_youtube_args)
         visitor_data = request.get("visitor_data")
         if visitor_data:
             youtube_args["visitor_data"] = [visitor_data]
@@ -327,19 +328,28 @@ def resolve_audio(request_json, runtime_path, cookie_directory):
                 cookie_file,
             )
         except DownloadError as primary_error:
-            if cookie_file is None or _is_age_verification_required(primary_error):
+            if cookie_file is None:
                 raise
-            fallback_args = {
-                "skip": ["hls", "dash", "translated_subs"],
-            }
             try:
                 info = _extract_info(
                     YoutubeDL,
                     url,
-                    fallback_args,
+                    dict(base_youtube_args),
+                    cookie_file,
                 )
-            except DownloadError as fallback_error:
-                raise fallback_error from primary_error
+            except DownloadError as cookie_context_error:
+                if _is_age_verification_required(cookie_context_error):
+                    raise cookie_context_error from primary_error
+                if _is_age_verification_required(primary_error):
+                    raise primary_error from None
+                try:
+                    info = _extract_info(
+                        YoutubeDL,
+                        url,
+                        dict(base_youtube_args),
+                    )
+                except DownloadError as anonymous_error:
+                    raise anonymous_error from cookie_context_error
 
         selected = _choose_format(
             info.get("formats"),
