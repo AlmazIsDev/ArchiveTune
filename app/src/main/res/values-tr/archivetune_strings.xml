@@ -506,4 +506,24 @@
     <string name="audio_crossfade_dialog_title">Çapraz geçiş süresi</string>
     <string name="audio_crossfade_seconds">%1$s sn</string>
     <string name="crossfade_gapless_title">Boşluk albümleri atla</string>
+    <string name="crossfade_gapless_description">Aynı albümden ardışık şarkılar arasında çapraz geçiş kullanmayın.</string>
+    <string name="player_stream_client_archivetune_extractor">ArchiveTune Çıkarıcı</string>
+    <string name="settings_appearance_subtitle">Temalar, düzen ve görsel stiller</string>
+    <string name="settings_playback_title">Playback</string>
+    <string name="settings_playback_subtitle">Ses davranışı, çapraz geçiş ve arkaplan oynatması</string>
+    <string name="settings_behavior_title">Davranış</string>
+    <string name="settings_behavior_subtitle">Geçmiş, varsayılanlar, ve gizlilik davranışı</string>
+    <string name="settings_integration_subtitle">Discord, Last.fm, Libre.fm ve ListenBrainz</string>
+    <string name="settings_backup_restore_subtitle">Kişisel uygulama verini dışa aktar ve kurtar</string>
+    <string name="settings_developer_options_title">Geliştirici Seçenekleri</string>
+    <string name="settings_developer_options_subtitle">Deneysel özellikler ve hata ayıklama</string>
+    <string name="settings_lyrics_subtitle">Şarkı sözü sağlayıcıları, önyükleme ve çeviri</string>
+    <string name="settings_content_subtitle">Dil, ülke ve öneri varsayılanları</string>
+    <string name="settings_internet_subtitle">Proxy, DNS ve ağ oynatma davranışı</string>
+    <string name="settings_po_token_subtitle">Oynatma doğrulaması ve ziyaretçi verileri</string>
+    <string name="settings_storage_subtitle">Önbellek, indirilenler ve çevrimdışı depolama</string>
+    <string name="settings_updates_subtitle">Sürüm, sürüm notları ve güncelleme kanalı</string>
+    <string name="settings_about_subtitle">Uygulama bilgisi, lisanlar ve katkıda bulunanlar</string>
+    <string name="settings_account_subtitle">Giriş yapın ve hesap senkronizasyonunu yönetin</string>
+    <string name="settings_stats_title">Dinlenme İstatistikleri</string>
 </resources>
