@@ -43,6 +43,7 @@ import moe.rukamori.archivetune.innertube.YouTube
 import moe.rukamori.archivetune.innertube.models.YouTubeLocale
 import moe.rukamori.archivetune.kugou.KuGou
 import moe.rukamori.archivetune.lastfm.LastFM
+import moe.rukamori.archivetune.morideobfuscator.ytdlp.YtDlpJavaScriptRuntime
 import moe.rukamori.archivetune.morideobfuscator.ytdlp.YtDlpRuntimeStore
 import moe.rukamori.archivetune.morideobfuscator.ytdlp.YtDlpUpdateScheduler
 import moe.rukamori.archivetune.paxsenix.PaxsenixLyrics
@@ -108,6 +109,7 @@ class App :
             Timber.plant(Timber.DebugTree())
             return
         }
+        YtDlpJavaScriptRuntime.initialize(this)
         BotGuardTokenGenerator.initialize(this)
         PreferenceStore.start(this)
         LeakCanaryController.initialize(this)
