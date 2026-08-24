@@ -283,8 +283,8 @@
     <string name="local_songs_scan_filters_title">扫描过滤规则</string>
     <string name="local_songs_scan_filters_note">修改将在下次扫描设备时生效</string>
     <string name="local_songs_scan_duration_title">过滤短音频</string>
-    <string name="local_songs_scan_duration_desc">跳过时长短于指定阈值的音频</string>
-    <string name="local_songs_scan_included_folders_title">包含目录</string>
+    <string name="local_songs_scan_duration_desc">跳过短于选中时长的歌曲</string>
+    <string name="local_songs_scan_included_folders_title">包含的文件夹</string>
     <string name="local_songs_scan_included_folders_desc">仅扫描存储在以下路径下的文件夹歌曲</string>
     <string name="local_songs_scan_included_folders_empty">已包含所有文件夹</string>
     <string name="local_songs_scan_included_folders_add">添加包含目录</string>
