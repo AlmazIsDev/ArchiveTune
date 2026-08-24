@@ -179,6 +179,7 @@ class App :
     private fun initializeDeferredAsync() {
         applicationScope.launch(Dispatchers.IO) {
             ytDlpRuntime.preWarm()
+            YtDlpJavaScriptRuntime.preWarm()
         }
 
         applicationScope.launch(Dispatchers.IO) {
