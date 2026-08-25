@@ -537,7 +537,7 @@
     <string name="audio_quality_high">High</string>
     <string name="audio_quality_low">Low</string>
     <string name="low_data_mode_title">Low Data Mode</string>
-    <string name="low_data_mode_description">Reduces mobile data usage by using low-quality streams and disabling playback cache, canvas, and background lyrics preloading on metered networks</string>
+    <string name="low_data_mode_description">Reduces mobile data usage by using low-quality streams and disabling playback cache and canvas on metered networks</string>
     <string name="queue">Queue</string>
     <string name="persistent_queue">Persistent queue</string>
     <string name="persistent_queue_desc">Restore your last queue when the app starts</string>
@@ -662,8 +662,6 @@
     <string name="disable_screenshot_desc">When this option is on, screenshots and the app\'s view in Recents are disabled.</string>
     <string name="enable_lrclib">Enable LrcLib lyrics provider</string>
     <string name="enable_kugou">Enable KuGou lyrics provider</string>
-    <string name="preload_queue_lyrics">Preload queue lyrics</string>
-    <string name="queue_lyrics_preload_count">Number of songs to preload</string>
     <string name="display">Display</string>
     <string name="romanization">Romanization</string>
     <string name="hide_explicit">Hide explicit content</string>

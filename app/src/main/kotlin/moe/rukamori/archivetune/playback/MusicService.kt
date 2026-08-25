@@ -214,7 +214,6 @@ import moe.rukamori.archivetune.innertube.models.WatchEndpoint
 import moe.rukamori.archivetune.innertube.models.response.PlayerResponse
 import moe.rukamori.archivetune.lastfm.LastFM
 import moe.rukamori.archivetune.lyrics.LyricsHelper
-import moe.rukamori.archivetune.lyrics.LyricsPreloadManager
 import moe.rukamori.archivetune.models.MediaMetadata
 import moe.rukamori.archivetune.models.PersistPlayerState
 import moe.rukamori.archivetune.models.PersistQueue
@@ -494,8 +493,6 @@ class MusicService :
     private var crossfadeHandoffProgress = 0f
     private var crossfadePlaybackRequested = false
     private var crossfadeSuppressedMediaId: String? = null
-    private var lyricsPreloadManager: LyricsPreloadManager? = null
-
     private val secondaryCrossfadeListener =
         object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
@@ -1428,15 +1425,6 @@ class MusicService :
                 wakelockEnabled = enabled
                 updateWakeLock()
             }
-
-        // Initialize lyrics pre-load manager
-        lyricsPreloadManager =
-            LyricsPreloadManager(
-                context = this,
-                database = database,
-                networkConnectivity = connectivityObserver,
-                lyricsHelper = lyricsHelper,
-            )
 
         dataStore.data
             .map(::readEqSettingsFromPrefs)
@@ -6622,12 +6610,6 @@ class MusicService :
 
         beginHistorySession(mediaItem?.mediaId, forceNew = true)
 
-        val currentIndex = player.currentMediaItemIndex
-        val queue = player.mediaItems.map { it.metadata }
-        if (queue.any { it != null }) {
-            lyricsPreloadManager?.onSongChanged(currentIndex, queue)
-        }
-
         val joined = togetherSessionState.value as? moe.rukamori.archivetune.together.TogetherSessionState.Joined
         if (joined?.role is moe.rukamori.archivetune.together.TogetherRole.Guest &&
             reason == Player.MEDIA_ITEM_TRANSITION_REASON_SEEK
@@ -8326,8 +8308,6 @@ class MusicService :
             connectivityObserver.unregister()
         } catch (_: Exception) {
         }
-        lyricsPreloadManager?.destroy()
-        lyricsPreloadManager = null
         abandonAudioFocus()
         try {
             releaseAudioEffects()
