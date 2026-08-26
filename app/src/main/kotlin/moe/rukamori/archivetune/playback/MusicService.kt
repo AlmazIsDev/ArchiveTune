@@ -218,6 +218,9 @@ import moe.rukamori.archivetune.models.MediaMetadata
 import moe.rukamori.archivetune.models.PersistPlayerState
 import moe.rukamori.archivetune.models.PersistQueue
 import moe.rukamori.archivetune.models.toMediaMetadata
+import moe.rukamori.archivetune.playback.preload.NextStreamPreloader
+import moe.rukamori.archivetune.playback.preload.ObservePlaybackPreloadConfigurationUseCase
+import moe.rukamori.archivetune.playback.preload.PlaybackPreloadConfiguration
 import moe.rukamori.archivetune.playback.stream.AudioStreamRequest
 import moe.rukamori.archivetune.playback.stream.ResolveAudioStreamUseCase
 import moe.rukamori.archivetune.playback.stream.ResolvedAudioStream
@@ -299,6 +302,14 @@ class MusicService :
 
     @Inject
     lateinit var resolveAudioStream: ResolveAudioStreamUseCase
+
+    @Inject
+    lateinit var observePlaybackPreloadConfiguration: ObservePlaybackPreloadConfigurationUseCase
+
+    @Inject
+    lateinit var nextStreamPreloader: NextStreamPreloader
+
+    private var playbackPreloadConfiguration: PlaybackPreloadConfiguration? = null
 
     private lateinit var audioManager: AudioManager
     private var audioFocusRequest: AudioFocusRequest? = null
@@ -1147,6 +1158,11 @@ class MusicService :
                     addListener(sleepTimer)
                 }
         playerInitialized.value = true
+        observePlaybackPreloadConfiguration()
+            .collect(scope) { configuration ->
+                playbackPreloadConfiguration = configuration
+                updateNextStreamPreload()
+            }
         database
             .blockedArtistIds()
             .map { ids -> ids.toSet() }
@@ -6822,10 +6838,72 @@ class MusicService :
         widgetUpdater.updateProgressTracking()
     }
 
+    private fun updateNextStreamPreload() {
+        val configuration = playbackPreloadConfiguration
+        if (configuration == null || !configuration.enabled || player.playbackState != Player.STATE_READY) {
+            nextStreamPreloader.cancel()
+            return
+        }
+
+        val nextMediaItemIndex = player.nextMediaItemIndex
+        if (nextMediaItemIndex == C.INDEX_UNSET ||
+            nextMediaItemIndex == player.currentMediaItemIndex ||
+            nextMediaItemIndex !in 0 until player.mediaItemCount
+        ) {
+            nextStreamPreloader.cancel()
+            return
+        }
+
+        val nextMediaItem = player.getMediaItemAt(nextMediaItemIndex)
+        val nextMediaId =
+            (nextMediaItem.localConfiguration?.customCacheKey ?: nextMediaItem.mediaId)
+                .trim()
+                .takeIf(String::isNotEmpty)
+        val currentMediaId =
+            player.currentMediaItem
+                ?.let { mediaItem -> mediaItem.localConfiguration?.customCacheKey ?: mediaItem.mediaId }
+                ?.trim()
+                ?.takeIf(String::isNotEmpty)
+        val nextUri = nextMediaItem.localConfiguration?.uri
+        if (nextMediaId == null ||
+            nextMediaId == currentMediaId ||
+            nextMediaId.isLocalMediaId() ||
+            nextUri == null ||
+            nextUri.shouldBypassYouTubeResolver()
+        ) {
+            nextStreamPreloader.cancel()
+            return
+        }
+
+        nextStreamPreloader.updateTarget(
+            request =
+                AudioStreamRequest(
+                    mediaId = nextMediaId,
+                    playlistId = null,
+                    quality = configuration.quality,
+                    networkMetered = false,
+                    purpose = StreamPurpose.PLAYBACK,
+                    authState = configuration.authState,
+                    pinnedFormatId = null,
+                ),
+            runtimeRevision = configuration.runtimeRevision,
+        )
+    }
+
     override fun onEvents(
         player: Player,
         events: Player.Events,
     ) {
+        if (events.containsAny(
+                Player.EVENT_PLAYBACK_STATE_CHANGED,
+                Player.EVENT_MEDIA_ITEM_TRANSITION,
+                Player.EVENT_TIMELINE_CHANGED,
+                Player.EVENT_SHUFFLE_MODE_ENABLED_CHANGED,
+                Player.EVENT_REPEAT_MODE_CHANGED,
+            )
+        ) {
+            updateNextStreamPreload()
+        }
         val currentMediaId = player.currentMediaItem?.mediaId
         if (currentMediaId == null && currentHistoryMediaId != null) {
             beginHistorySession(null, forceNew = true)
@@ -8337,6 +8415,7 @@ class MusicService :
             player.release()
         } catch (_: Exception) {
         }
+        nextStreamPreloader.cancel()
         scopeJob.cancel()
     }
 
