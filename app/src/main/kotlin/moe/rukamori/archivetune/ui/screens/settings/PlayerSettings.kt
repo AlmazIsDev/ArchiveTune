@@ -80,6 +80,18 @@ fun PlayerSettings(navController: NavController) {
         hiltViewModel()
     val playbackPerformanceSettingsState by
         playbackPerformanceSettingsViewModel.uiState.collectAsStateWithLifecycle()
+    val onLowDataModeChange =
+        remember(playbackPerformanceSettingsViewModel) {
+            playbackPerformanceSettingsViewModel::onLowDataModeChange
+        }
+    val onPreloadNextSongChange =
+        remember(playbackPerformanceSettingsViewModel) {
+            playbackPerformanceSettingsViewModel::onPreloadNextSongChange
+        }
+    val onPlaybackPerformanceRetry =
+        remember(playbackPerformanceSettingsViewModel) {
+            playbackPerformanceSettingsViewModel::retry
+        }
     val (audioQuality, onAudioQualityChange) =
         rememberEnumPreference(
             AudioQualityKey,
@@ -276,11 +288,11 @@ fun PlayerSettings(navController: NavController) {
                     )
                 }
 
-                PlaybackPerformancePreferences(
+                playbackPerformancePreferences(
                     state = playbackPerformanceSettingsState,
-                    onLowDataModeChange = playbackPerformanceSettingsViewModel::onLowDataModeChange,
-                    onPreloadNextSongChange = playbackPerformanceSettingsViewModel::onPreloadNextSongChange,
-                    onRetry = playbackPerformanceSettingsViewModel::retry,
+                    onLowDataModeChange = onLowDataModeChange,
+                    onPreloadNextSongChange = onPreloadNextSongChange,
+                    onRetry = onPlaybackPerformanceRetry,
                 )
 
                 item {
@@ -512,7 +524,7 @@ fun PlayerSettings(navController: NavController) {
     }
 }
 
-private fun PreferenceGroupScope.PlaybackPerformancePreferences(
+private fun PreferenceGroupScope.playbackPerformancePreferences(
     state: PlaybackPerformanceSettingsUiState,
     onLowDataModeChange: (Boolean) -> Unit,
     onPreloadNextSongChange: (Boolean) -> Unit,

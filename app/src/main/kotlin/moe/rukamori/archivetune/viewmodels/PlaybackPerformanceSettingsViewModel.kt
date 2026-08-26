@@ -13,15 +13,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import moe.rukamori.archivetune.R
 import moe.rukamori.archivetune.playback.preload.ObservePlaybackPerformanceSettingsUseCase
+import moe.rukamori.archivetune.playback.preload.PlaybackPerformanceSettings
 import moe.rukamori.archivetune.playback.preload.SetLowDataModeUseCase
 import moe.rukamori.archivetune.playback.preload.SetPreloadNextSongUseCase
+import moe.rukamori.archivetune.utils.reportException
 import javax.inject.Inject
 
 sealed interface PlaybackPerformanceSettingsUiState {
@@ -84,39 +88,64 @@ class PlaybackPerformanceSettingsViewModel
         }
 
         private fun observeSettings() {
-            observeJob =
-                viewModelScope.launch {
+            lateinit var nextJob: Job
+            nextJob =
+                viewModelScope.launch(start = CoroutineStart.LAZY) {
                     try {
                         observePlaybackPerformanceSettings().collect { settings ->
-                            mutableUiState.value =
-                                if (settings.hasPersistedValue) {
-                                    PlaybackPerformanceSettingsUiState.Success(
-                                        PlaybackPerformanceSettingsUiData(
-                                            lowDataModeEnabled = settings.lowDataModeEnabled,
-                                            preloadNextSongEnabled = settings.preloadNextSongEnabled,
-                                            preloadNextSongAvailable = !settings.lowDataModeEnabled,
-                                        ),
-                                    )
-                                } else {
-                                    PlaybackPerformanceSettingsUiState.Empty
-                                }
+                            mutableUiState.value = settings.toUiState()
                         }
-                    } catch (error: CancellationException) {
-                        throw error
-                    } catch (_: Throwable) {
-                        mutableUiState.value = PlaybackPerformanceSettingsUiState.Error(R.string.error_unknown)
+                    } catch (cancellation: CancellationException) {
+                        throw cancellation
+                    } catch (throwable: Throwable) {
+                        reportException(throwable)
+                        mutableUiState.value =
+                            PlaybackPerformanceSettingsUiState.Error(R.string.error_unknown)
                     } finally {
-                        observeJob = null
+                        if (observeJob === nextJob) {
+                            observeJob = null
+                        }
                     }
                 }
+            observeJob = nextJob
+            nextJob.start()
         }
 
         private fun updateSettings(update: suspend () -> Unit) {
-            updateJob?.cancel()
-            updateJob =
-                viewModelScope.launch {
+            val previousJob = updateJob
+            lateinit var nextJob: Job
+            nextJob =
+                viewModelScope.launch(start = CoroutineStart.LAZY) {
                     try {
                         update()
-                    } catch (error: CancellationException) {
-                        throw error
-                    } catch (_: Throwable) {
+                    } catch (cancellation: CancellationException) {
+                        throw cancellation
+                    } catch (throwable: Throwable) {
+                        reportException(throwable)
+                        observeJob?.cancelAndJoin()
+                        mutableUiState.value =
+                            PlaybackPerformanceSettingsUiState.Error(R.string.error_unknown)
+                    } finally {
+                        if (updateJob === nextJob) {
+                            updateJob = null
+                        }
+                    }
+                }
+            updateJob = nextJob
+            previousJob?.cancel()
+            nextJob.start()
+        }
+
+        private fun PlaybackPerformanceSettings.toUiState(): PlaybackPerformanceSettingsUiState =
+            if (hasPersistedValue) {
+                PlaybackPerformanceSettingsUiState.Success(
+                    PlaybackPerformanceSettingsUiData(
+                        lowDataModeEnabled = lowDataModeEnabled,
+                        preloadNextSongEnabled = preloadNextSongEnabled,
+                        preloadNextSongAvailable = !lowDataModeEnabled,
+                    ),
+                )
+            } else {
+                PlaybackPerformanceSettingsUiState.Empty
+            }
+    }

@@ -121,3 +121,8 @@ class NextStreamPreloader
             val contentLength = getContentMetadata(key).get(ContentMetadata.KEY_CONTENT_LENGTH, -1L)
             return contentLength > 0L && isCached(key, 0L, contentLength)
         }
+
+        private companion object {
+            const val LOG_TAG = "AudioStreamResolver"
+        }
+    }

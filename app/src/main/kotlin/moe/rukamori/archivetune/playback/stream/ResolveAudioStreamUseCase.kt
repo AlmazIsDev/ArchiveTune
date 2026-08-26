@@ -109,15 +109,25 @@ class ResolveAudioStreamUseCase
                     return@synchronized ResolutionLease.Active(resolution)
                 }
 
+                lateinit var resolution: InFlightResolution
                 val deferred =
                     scope.async(start = CoroutineStart.LAZY) {
                         val resolved = resolveUncached(request)
-                        coroutineContext.ensureActive()
-                        storeResolvedStream(key, resolved)
+                        val resolutionContext = coroutineContext
+                        resolutionContext.ensureActive()
+                        synchronized(inFlightLock) {
+                            resolutionContext.ensureActive()
+                            if (inFlight[key] !== resolution || !resolution.hasOwners()) {
+                                throw CancellationException(
+                                    "Audio stream resolution no longer has active consumers",
+                                )
+                            }
+                            storeResolvedStream(key, resolved)
+                        }
                         resolved
                     }
 
-                val resolution = InFlightResolution(deferred)
+                resolution = InFlightResolution(deferred)
                 resolution.addOwner(consumer)
                 deferred.invokeOnCompletion {
                     synchronized(inFlightLock) {
@@ -159,6 +169,9 @@ class ResolveAudioStreamUseCase
                 ResolutionConsumer.PRELOAD -> preloadOwners += 1
             }
         }
+
+        private fun InFlightResolution.hasOwners(): Boolean =
+            playbackOwners > 0 || preloadOwners > 0
 
         private fun InFlightResolution.removeOwner(consumer: ResolutionConsumer) {
             when (consumer) {
