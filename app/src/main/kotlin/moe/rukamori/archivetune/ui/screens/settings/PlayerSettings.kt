@@ -559,7 +559,7 @@ private fun PreferenceGroupScope.playbackPerformancePreferences(
         SwitchPreference(
             title = { Text(stringResource(R.string.preload_next_song_title)) },
             description = stringResource(R.string.preload_next_song_warning),
-            icon = { Icon(painterResource(R.drawable.queue_music), null) },
+            icon = { Icon(painterResource(R.drawable.error), null) },
             checked = preloadNextSongEnabled,
             onCheckedChange = onPreloadNextSongChange,
             isEnabled = preloadNextSongControlEnabled,
