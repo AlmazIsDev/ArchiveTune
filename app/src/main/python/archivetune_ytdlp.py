@@ -491,7 +491,10 @@ def _extract_audio_info(youtube_dl, url, request, cookie_file):
             bool(request.get("network_metered")),
             request.get("pinned_format_id"),
         )
-        if _has_required_song_metadata(info):
+        if (
+            not request.get("requires_song_metadata")
+            or _has_required_song_metadata(info)
+        ):
             return info, selected
     except (DownloadError, RuntimeError):
         pass

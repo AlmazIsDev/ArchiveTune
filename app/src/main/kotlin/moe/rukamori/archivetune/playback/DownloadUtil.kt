@@ -287,6 +287,7 @@ class DownloadUtil
         private fun createDownloadStreamRequest(mediaId: String): AudioStreamRequest {
             val lowDataModeActive = context.isLowDataModeActive()
             val hasCachedContent = downloadCache.getCachedSpans(mediaId).isNotEmpty()
+            val requiresSongMetadata = database.getSongByIdBlocking(mediaId) == null
             val pinnedFormatId =
                 downloadCache
                     .getContentMetadata(mediaId)
@@ -305,6 +306,7 @@ class DownloadUtil
                 purpose = StreamPurpose.DOWNLOAD,
                 authState = YouTube.currentPlaybackAuthState(),
                 pinnedFormatId = pinnedFormatId,
+                requiresSongMetadata = requiresSongMetadata,
             )
         }
 

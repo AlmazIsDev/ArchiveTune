@@ -44,6 +44,7 @@ class ResolveAudioStreamUseCase
             val purpose: StreamPurpose,
             val authFingerprint: String,
             val pinnedFormatId: Int?,
+            val requiresSongMetadata: Boolean,
             val runtimeRevision: String,
         )
 
@@ -286,6 +287,7 @@ class ResolveAudioStreamUseCase
                 purpose = purpose,
                 authFingerprint = authState.streamCacheFingerprint,
                 pinnedFormatId = pinnedFormatId,
+                requiresSongMetadata = requiresSongMetadata,
                 runtimeRevision = YtDlpRuntimeStore.revision,
             )
 
@@ -300,7 +302,13 @@ class ResolveAudioStreamUseCase
                         StreamPurpose.PLAYBACK -> StreamPurpose.DOWNLOAD
                         StreamPurpose.DOWNLOAD -> StreamPurpose.PLAYBACK
                     }
-                putResolvedStream(key.copy(purpose = alternatePurpose), resolved)
+                putResolvedStream(
+                    key.copy(
+                        purpose = alternatePurpose,
+                        requiresSongMetadata = false,
+                    ),
+                    resolved,
+                )
             }
             Timber.tag(TAG).d(
                 "Resolved %s via %s (%s)",
