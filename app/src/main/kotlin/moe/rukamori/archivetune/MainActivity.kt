@@ -2422,6 +2422,7 @@ class MainActivity : ComponentActivity() {
                                     navigationBuilder(
                                         navController,
                                         topAppBarScrollBehavior,
+                                        homeViewModel,
                                         { latestVersionName },
                                         disableAnimations,
                                         onClearUpdateBadge = { latestVersionName = BuildConfig.VERSION_NAME },
