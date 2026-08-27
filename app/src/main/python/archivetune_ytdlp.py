@@ -432,7 +432,7 @@ def _build_extractor_args(request, authenticated, skip_initial_data=False):
         "skip": ["hls", "dash", "translated_subs"],
     }
     if skip_initial_data:
-        youtube_args["player_skip"] = ["initial_data"]
+        youtube_args["player_skip"] = ["initial_data", "configs"]
     extractor_args = {"youtube": youtube_args}
     if not authenticated:
         return extractor_args
